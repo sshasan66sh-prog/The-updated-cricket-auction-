@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7fb8ea">
+<title>Cricket Auction</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏏</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#edf2ec;--card:#ffffff;--card2:#f3f7f1;--ink:#10231a;--muted:#587064;--line:#d3dfd3;
+  --turf:#1f8a57;--turf-ink:#ffffff;--brass:#a97800;--brass-bg:#f3d77a;--brass-ink:#241a00;--red:#c9372c;--ok:#1f8a57;
+  --board:#0a1512;--board-ink:#f3f7ef;--board-line:#1f3d31;--b-brass:#ecc14f;--b-red:#ff5a4d;--b-muted:#8fb0a0;
+  --disp:'Big Shoulders Display','Arial Narrow',Impact,sans-serif;
+  --ui:'Figtree',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#07120e;--card:#0f221a;--card2:#0b1c15;--ink:#eef5ea;--muted:#8fab9d;--line:#1f3d31;
+    --turf:#3fbf80;--turf-ink:#04130c;--brass:#ecc14f;--brass-bg:#ecc14f;--brass-ink:#241a00;--red:#ff6a5c;--ok:#3fbf80;
+    --board:#040a08;--board-line:#1a3328;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#07120e;--card:#0f221a;--card2:#0b1c15;--ink:#eef5ea;--muted:#8fab9d;--line:#1f3d31;
+  --turf:#3fbf80;--turf-ink:#04130c;--brass:#ecc14f;--brass-bg:#ecc14f;--brass-ink:#241a00;--red:#ff6a5c;--ok:#3fbf80;
+  --board:#040a08;--board-line:#1a3328;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.4 var(--ui);min-height:100%}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:disabled{cursor:not-allowed}
+h1,h2,h3,p{margin:0}
+.wrap{max-width:520px;margin:0 auto;padding:14px 14px 40px}
+.shell{max-width:520px;margin:0 auto;padding:0 14px 110px}
+.muted{color:var(--muted)}
+.center{text-align:center}
+small{font-size:13px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0}
+.card h2{font:800 26px/1 var(--disp);letter-spacing:.2px;margin-bottom:10px}
+.card h3{font:700 15px/1.2 var(--ui);margin:0 0 8px}
+.note{border-radius:12px;padding:10px 12px;margin:12px 0;background:var(--card2);border:1px solid var(--line);font-size:14px}
+.note.warn{border-color:var(--red);color:var(--ink)}
+.note.good{border-color:var(--ok)}
+/* buttons */
+.btn{min-height:48px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-weight:700;width:100%}
+.btn.pri{background:var(--turf);color:var(--turf-ink);border-color:transparent}
+.btn.gold{background:var(--brass-bg);color:var(--brass-ink);border-color:transparent}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:38px;width:auto;padding:0 12px;font-size:14px;border-radius:10px}
+.btn.big{min-height:60px;font-size:20px}
+.btn:disabled{opacity:.45}
+.btn.danger{color:var(--red);border-color:var(--red)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row b{display:block}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input[type=text],input[type=number],textarea{width:100%;min-height:46px;border-radius:10px;border:1px solid var(--line);background:var(--card2);padding:8px 12px;font-size:16px}
+textarea{min-height:96px;resize:vertical}
+input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--turf);outline-offset:1px}
+.inline{display:flex;gap:8px;align-items:flex-end}
+.inline>*{min-width:0}
+/* home */
+.brand{padding:22px 4px 6px}
+.brand h1{font:900 56px/.9 var(--disp);letter-spacing:.5px}
+.brand p{margin-top:10px;color:var(--muted);max-width:30ch}
+.stump{display:flex;gap:5px;margin-bottom:12px}
+.stump i{width:7px;height:34px;border-radius:3px;background:var(--brass-bg)}
+.stump i:nth-child(2){height:40px}
+/* steppers, seg */
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card2);font-size:20px;font-weight:700}
+.step button:disabled{opacity:.35}
+.step span{min-width:54px;text-align:center;font:800 24px var(--disp)}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{flex:1;min-height:42px;border:0;background:var(--card2);font-weight:600;font-size:14px;border-left:1px solid var(--line)}
+.seg button:first-child{border-left:0}
+.seg button.on{background:var(--turf);color:var(--turf-ink)}
+/* room code */
+.code{font:900 54px/1 var(--disp);letter-spacing:6px;text-align:center;color:var(--brass);padding:6px 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:var(--card2);border:1px solid var(--line);font-size:14px;font-weight:600}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.chip button{border:0;background:none;color:var(--muted);font-size:16px;padding:0 0 0 2px}
+.plist .prow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.plist .prow:first-child{border-top:0}
+.plist .prow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plist .prow em{font:800 20px var(--disp);font-style:normal;color:var(--brass)}
+.plist .prow button{border:0;background:none;color:var(--muted);font-size:20px;width:34px;height:34px}
+.issues{margin:0 0 10px;padding-left:18px;color:var(--red);font-size:14px}
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;background:var(--bg)}
+.top b{font:800 22px/1 var(--disp)}
+.top small{display:block;margin-top:2px}
+.purse{text-align:right}
+.purse b{color:var(--brass);font-size:30px}
+/* lot scoreboard */
+.lot{position:relative;overflow:hidden;border-radius:20px;padding:16px 16px 14px;margin:6px 0 12px;color:var(--board-ink);
+  background:radial-gradient(120% 70% at 50% -15%,rgba(255,240,190,.26),transparent 62%),linear-gradient(180deg,#0e2019,var(--board));
+  border:1px solid var(--board-line)}
+.lot.extra{border-color:var(--b-red);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 3px rgba(255,90,77,.35)}}
+.lotno{font-size:13px;color:var(--b-muted);display:flex;justify-content:space-between}
+.pname{font:900 clamp(40px,13vw,58px)/.95 var(--disp);margin:8px 0 4px;word-break:break-word}
+.base{color:var(--b-muted);font-size:14px}
+.scoreboard{display:flex;justify-content:space-between;align-items:flex-end;margin-top:12px;gap:10px}
+.scoreboard small{color:var(--b-muted)}
+.price{font:900 92px/.85 var(--disp);color:var(--b-brass);display:flex;align-items:baseline;gap:4px}
+.price i{font:700 24px var(--disp);font-style:normal;color:var(--b-muted)}
+.clock{text-align:right}
+#cd{font:900 62px/.9 var(--disp)}
+.lot.extra #cd,.lot.extra #cl{color:var(--b-red)}
+.segbar{height:12px;margin:12px 0 8px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.10) 0 8px,transparent 8px 11px)}
+#bar{height:100%;width:100%;background:repeating-linear-gradient(90deg,var(--b-brass) 0 8px,transparent 8px 11px);transition:width .18s linear}
+.lot.extra #bar{background:repeating-linear-gradient(90deg,var(--b-red) 0 8px,transparent 8px 11px)}
+.leader{font-size:15px;min-height:22px}
+.leader b{color:var(--b-brass)}
+.stamp{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;
+  background:rgba(4,10,8,.86);animation:slam .35s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes slam{from{transform:scale(1.5);opacity:0}to{transform:none;opacity:1}}
+.stamp .big{font:900 74px/.9 var(--disp);color:var(--b-brass);transform:rotate(-4deg);border:5px solid var(--b-brass);padding:2px 18px;border-radius:8px}
+.stamp.un .big{color:var(--b-muted);border-color:var(--b-muted)}
+.stamp p{font-size:18px;font-weight:700;margin-top:12px}
+.stamp small{color:var(--b-muted)}
+/* bids */
+.bids{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:10px 0 6px}
+.bidbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:68px;border-radius:14px;border:1px solid var(--line);background:var(--card);padding:4px 0}
+.bidbtn b{font:900 28px/1 var(--disp)}
+.bidbtn span{font-size:12px;color:var(--muted)}
+.bidbtn:not(:disabled){background:var(--brass-bg);border-color:transparent;color:var(--brass-ink)}
+.bidbtn:not(:disabled) span{color:var(--brass-ink);opacity:.8}
+.bidbtn:disabled{opacity:.4}
+.bidbtn:not(:disabled):active{transform:translateY(1px)}
+.hostbar{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:12px 0}
+.hostbar .btn{min-height:44px;padding:0 4px;font-size:13px}
+.recent{font-size:14px;color:var(--muted)}
+.recent div{padding:6px 0;border-top:1px solid var(--line)}
+.recent b{color:var(--ink)}
+/* tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;justify-content:center;gap:6px;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
+.tabs button{flex:1;max-width:170px;min-height:50px;border-radius:12px;border:0;background:transparent;font-weight:700;font-size:14px;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.tabs button span{font-size:18px}
+.tabs button.on{background:var(--card2);color:var(--ink);box-shadow:inset 0 -3px 0 var(--brass)}
+/* squad / xi */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.col{min-width:0}
+.col h3{display:flex;justify-content:space-between;align-items:baseline}
+.col h3 small{font-weight:500}
+.srow,.slot .sl{display:flex;align-items:center;gap:6px;width:100%;min-height:46px;padding:0 8px;border-radius:10px;border:1px solid var(--line);background:var(--card);text-align:left;margin-bottom:6px}
+.srow i,.slot .sl i{font:800 15px var(--disp);font-style:normal;color:var(--muted);min-width:18px}
+.srow span,.slot .sl span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px}
+.srow em{font-style:normal;font-size:12px;color:var(--brass);font-weight:700}
+.srow.used{opacity:.55}
+.srow.used em::after{content:' XI'}
+.srow.sel,.slot.sel .sl{border-color:var(--brass);box-shadow:0 0 0 2px var(--brass) inset;background:var(--card2)}
+.slot{display:flex;gap:4px;margin-bottom:6px}
+.slot .sl{margin:0;flex:1}
+.slot .sl.empty span{color:var(--muted);font-weight:500}
+.slot .x{width:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:18px;color:var(--muted)}
+.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.actions .btn{flex:1}
+/* board */
+.trow{border-top:1px solid var(--line);padding:10px 0}
+.trow:first-child{border-top:0}
+.thead{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;text-align:left;padding:0}
+.thead b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thead em{font:800 20px var(--disp);font-style:normal;color:var(--brass)}
+.badge{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--line)}
+.badge.bad{color:var(--red);border-color:var(--red)}
+.badge.ok{color:var(--ok);border-color:var(--ok)}
+.tsq{margin:8px 0 0;padding-left:20px;font-size:14px;color:var(--muted)}
+.tsq b{color:var(--ink);font-weight:600}
+.pool .prow{display:flex;gap:8px;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line);font-size:14px}
+.pool .prow:first-child{border-top:0}
+.pool .prow span:last-child{color:var(--muted);text-align:right}
+/* judging / results */
+.jcard{text-align:center;padding:18px 14px}
+.jcard .jt{font:800 22px var(--disp);color:var(--muted)}
+.jcard .jn{font:900 clamp(38px,12vw,54px)/1 var(--disp);margin:6px 0}
+.dots{display:flex;gap:6px;justify-content:center;margin:12px 0}
+.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line)}
+.dots i.y{background:var(--brass-bg);border-color:var(--brass-bg)}
+.dots i.n{background:var(--line)}
+.dots i.now{border-color:var(--brass)}
+.two-btn{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+.win{text-align:center;padding:22px 14px;background:linear-gradient(180deg,var(--brass-bg),transparent 140%);border-color:var(--brass)}
+.win .t{font:900 44px/1 var(--disp);color:var(--brass-ink)}
+.win p{color:var(--brass-ink)}
+.rank{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.rank:first-child{border-top:0}
+.rank .n{font:900 24px var(--disp);width:26px;color:var(--muted)}
+.rank b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank em{font:900 26px var(--disp);font-style:normal;color:var(--brass)}
+.xilist{font-size:14px;margin:6px 0 0;padding-left:0;list-style:none}
+.xilist li{display:flex;justify-content:space-between;padding:3px 0}
+.xilist .y{color:var(--ok);font-weight:700}
+.xilist .n{color:var(--muted)}
+#toast{position:fixed;left:50%;transform:translate(-50%,-20px);top:calc(12px + env(safe-area-inset-top,0px));z-index:50;max-width:92vw;padding:10px 16px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:.2s}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.lot.extra{animation:none}.stamp{animation:none}#bar{transition:none}}
+
+/* ===== Sky and Night themes ===== */
+:root[data-theme="sky"],:root[data-theme="night"]{--disp:'Fraunces',Georgia,'Times New Roman',serif}
+:root[data-theme="sky"]{--sky:linear-gradient(#7fb8ea 0%,#bfdcf3 38%,#e4f0f6 62%,#cfe6d2 100%);--bg:#cfe3f3;--card:rgba(255,255,255,.76);--card2:rgba(255,255,255,.55);--ink:#10263d;--muted:#4f6b85;--line:rgba(255,255,255,.8);--turf:#2f8f93;--turf-ink:#fff;--brass:#9a7222;--brass-bg:#e8c978;--brass-ink:#2a1f05;--red:#c7352b;--ok:#1d7f55;--board:#fff;--board-line:rgba(255,255,255,.85);--board-ink:#10263d;--b-brass:#9a7222;--b-red:#d1392d;--b-muted:#4f6b85;--lotbg:rgba(255,255,255,.82);--stampbg:rgba(255,255,255,.92);--seg:rgba(16,38,61,.13);--topbg:rgba(207,227,243,.88);--cloud:#fff;--grass:#5fa35a;--pitch:#d8b77a;--figure:#1f4f86;--stars:0}
+:root[data-theme="night"]{--sky:linear-gradient(#08122b 0%,#14284f 45%,#223f6c 75%,#2c4a72 100%);--bg:#0e1b38;--card:rgba(18,34,66,.74);--card2:rgba(30,52,92,.6);--ink:#eaf1fb;--muted:#9bb3d1;--line:rgba(255,255,255,.14);--turf:#3aa6aa;--turf-ink:#041516;--brass:#e6c36a;--brass-bg:#e6c36a;--brass-ink:#2a1f05;--red:#ff7a6c;--ok:#4fd19b;--board:#0b1630;--board-line:rgba(255,255,255,.14);--board-ink:#eaf1fb;--b-brass:#e6c36a;--b-red:#ff7a6c;--b-muted:#9bb3d1;--lotbg:rgba(14,28,56,.8);--stampbg:rgba(8,18,40,.92);--seg:rgba(255,255,255,.14);--topbg:rgba(10,22,46,.88);--cloud:#9bb3d1;--grass:#14342a;--pitch:#5b4a30;--figure:#8fb4e6;--stars:.9}
+body{background:var(--sky) fixed;color:var(--ink)}
+#scene{position:fixed;inset:0;z-index:-1;pointer-events:none}
+#scene svg{width:100%;height:100%;display:block}
+#scene .cl ellipse{fill:var(--cloud);opacity:.55}
+#scene .gr{fill:var(--grass)}#scene .pi{fill:var(--pitch)}#scene .cr{stroke:#fff;stroke-width:3;opacity:.8}
+#scene .fg path{stroke:var(--figure);fill:none;stroke-linecap:round;opacity:.8}#scene .fg .h{fill:var(--figure);opacity:.8}
+#scene .st circle{fill:#fff;opacity:var(--stars)}
+.card,.tabs,.top,.sheet,.startbar{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.card{border-radius:22px;box-shadow:0 10px 30px rgba(15,50,100,.12)}
+.card h2,.pname,.jn,.jcard .jt,.win .t,.brand h1,.stamp .big,.price,#cd,.xiclock b,.code,.sheet h3{font-family:var(--disp);font-weight:600}
+.card h2::after{content:"";display:block;width:30px;height:2px;background:var(--brass);margin-top:8px}
+.card h2 small{font-family:var(--ui)}.card h2 i{font-style:italic;font-weight:500}
+.lot{background:var(--lotbg);border-color:var(--board-line);box-shadow:0 10px 30px rgba(15,50,100,.14)}
+.price{font-size:84px}
+.segbar{background:repeating-linear-gradient(90deg,var(--seg) 0 8px,transparent 8px 11px)}
+.stamp{background:var(--stampbg)}
+.top{display:block;background:var(--topbg);margin:0 -14px 6px;padding:8px 14px 6px}
+.trow1,.trow2{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.trow2{margin-top:4px}
+.wrap.home>.trow1{padding-top:10px}
+.kicker{font:700 12px var(--ui);letter-spacing:.22em;color:var(--brass);display:flex;align-items:center;gap:8px}
+.kicker::before{content:"";width:22px;height:2px;background:var(--brass)}
+.tools{display:flex;gap:6px}
+.tools button{min-width:38px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:15px;padding:0 10px}
+.tools .lv{font-weight:700;font-size:13px}
+.wrap.lobbyhost{padding-bottom:140px}
+.startbar{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--topbg);border-top:1px solid var(--line)}
+.startbar .issue{display:block;color:var(--red);margin:0 0 6px;font-size:13px}
+.strip{display:flex;gap:8px;overflow-x:auto;margin:0 -14px 10px;padding:2px 14px 6px}
+.tm{flex:none;min-width:132px;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:16px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.tm.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}
+.tm b{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.shade{position:fixed;inset:0;background:rgba(5,15,30,.5);z-index:40}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:520px;margin:0 auto;padding:18px 16px calc(16px + env(safe-area-inset-bottom,0px));background:var(--card);border-radius:24px 24px 0 0;display:flex;flex-direction:column;gap:10px}
+.sheet h3{font-size:22px;margin:0}
+.xiclock{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;margin:12px 0;border-radius:18px;background:var(--card);border:1px solid var(--line)}
+.xiclock b{font-size:40px;color:var(--brass)}
+.btn.pri{box-shadow:0 6px 16px rgba(47,143,147,.28)}
+
+/* ===== v2: roles, colours, chat, profile, championship, intro ===== */
+.role{display:inline-flex;align-items:center;font:700 11px/1 var(--ui);letter-spacing:.04em;padding:3px 7px;border-radius:999px;color:#fff;flex:none}
+.role.lg{font-size:13px;padding:5px 11px}
+.r-bat{background:#2f7fd8}.r-bowl{background:#d6453d}.r-ar{background:#2c9a62}.r-mys{background:#6b5b95}
+.plist .prow button.rolebtn{width:auto;height:auto;font-size:11px;border:0;color:#fff;padding:4px 8px;border-radius:999px}
+.plist .prow .pts{display:flex;align-items:center;gap:2px;flex:none}
+.plist .prow .pts button{width:26px;height:26px;font-size:16px;border:1px solid var(--line);border-radius:8px;color:var(--ink)}
+.plist .prow .pts b{min-width:30px;text-align:center;font-size:13px}
+.lot.rl-bat{--ra:#2f7fd8}.lot.rl-bowl{--ra:#d6453d}.lot.rl-ar{--ra:#2c9a62}.lot.rl-mys{--ra:#6b5b95}
+.lot[class*=rl-]{border-top:6px solid var(--ra)}
+.rolebar{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.ptsb{font:800 14px var(--ui);color:var(--b-brass);padding:4px 10px;border-radius:999px;border:1px solid var(--b-brass)}
+.rc{font:700 10px/1 var(--ui);padding:3px 6px;border-radius:999px;color:#fff;flex:none}
+.tpill{display:inline-block;padding:1px 9px;border-radius:999px;font-weight:700;line-height:1.5}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.sw{width:34px;height:34px;border-radius:50%;border:3px solid transparent;box-shadow:0 0 0 1px var(--line);padding:0}
+.sw.on{border-color:var(--ink)}
+.sw:disabled{opacity:.22}
+.tools .ub{background:var(--red);color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:4px}
+.sheet.chat{height:min(72vh,540px)}
+.msgs{flex:1;overflow:auto;display:flex;flex-direction:column;gap:7px;padding:2px}
+.msg{font-size:14px;word-break:break-word}
+.msg small{display:block;font-size:11px}
+.pid{font:800 30px var(--disp);letter-spacing:2px;color:var(--brass)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{text-align:center;padding:8px 4px;background:var(--card2);border-radius:12px}
+.stat b{font:800 24px var(--disp);display:block}
+.stat small{font-size:11px}
+.tblwrap{overflow-x:auto;margin:0 -4px}
+.ct{border-collapse:collapse;width:100%;font-size:14px}
+.ct th,.ct td{padding:7px 6px;text-align:center;border-top:1px solid var(--line);white-space:nowrap}
+.ct th{border-top:0;color:var(--muted);font-weight:600;font-size:12px}
+.ct td:nth-child(2),.ct th:nth-child(2){text-align:left}
+.ct .tot{font:800 18px var(--disp);color:var(--brass)}
+.retrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.retrow:first-of-type{border-top:0}
+.retrow span.nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.award{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--brass-bg);color:var(--brass-ink);margin-left:6px}
+.intro{position:fixed;inset:0;z-index:60;background:#7fb8ea;overflow:hidden}
+.intro *{animation-delay:var(--e,0ms)}
+.intro .isv{position:absolute;inset:0;width:100%;height:100%}
+.intro .ibowler{animation:ibowl 9s linear both;transform-origin:180px 500px;transform-box:view-box}
+.intro .iarm{animation:iarm 9s linear both;transform-origin:190px 442px;transform-box:view-box}
+.intro .iball{animation:iball 9s linear both;transform-origin:190px 398px;transform-box:view-box}
+.intro .ibat{animation:ibat 9s linear both;transform-origin:190px 196px;transform-box:view-box}
+.intro .iflash{position:absolute;inset:0;background:#fff;opacity:0;animation:iflash 9s linear both}
+.intro .idim{position:absolute;inset:0;background:#06140e;opacity:0;animation:idim 9s linear both}
+.intro .ihit{position:absolute;left:0;right:0;top:20%;text-align:center;font:900 64px var(--disp);color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.45);opacity:0;animation:ihit 9s linear both}
+.intro .icap{position:absolute;left:0;right:0;top:calc(14px + env(safe-area-inset-top,0px));text-align:center;font:700 13px var(--ui);letter-spacing:.2em;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.intro .icd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 200px/1 var(--disp);color:#fff;text-shadow:0 8px 40px rgba(0,0,0,.45);opacity:0}
+.intro .c3{animation:ic3 9s linear both}.intro .c2{animation:ic2 9s linear both}.intro .c1{animation:ic1 9s linear both}
+.intro .ready{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 58px/1 var(--disp);color:var(--b-brass,#ecc14f);text-shadow:0 6px 30px rgba(0,0,0,.5);letter-spacing:2px;opacity:0;animation:iready 9s linear both}
+@keyframes ibowl{0%{transform:translateY(120px) scale(1.12)}22%{transform:none}100%{transform:none}}
+@keyframes iarm{0%,22%{transform:rotate(0)}28%{transform:rotate(-340deg)}100%{transform:rotate(-340deg)}}
+@keyframes iball{0%,27%{opacity:0;transform:translate(0,0) scale(1)}28%{opacity:1;transform:translate(0,0) scale(1)}40%{opacity:1;transform:translate(0,-193px) scale(.3)}41%{opacity:1;transform:translate(0,-193px) scale(.3);animation-timing-function:cubic-bezier(.5,0,1,1)}57%{opacity:1;transform:translate(40px,210px) scale(42)}58%,100%{opacity:0;transform:translate(40px,210px) scale(42)}}
+@keyframes ibat{0%,34%{transform:rotate(0)}38%{transform:rotate(-45deg)}40%{transform:rotate(-45deg)}41.5%{transform:rotate(75deg)}100%{transform:rotate(75deg)}}
+@keyframes iflash{0%,53%{opacity:0}57%{opacity:.95}62%,100%{opacity:0}}
+@keyframes idim{0%,58%{opacity:0}63%,100%{opacity:.62}}
+@keyframes ihit{0%,40.5%{opacity:0;transform:scale(.4)}43%{opacity:1;transform:scale(1.15)}49%{opacity:1;transform:scale(1)}52%,100%{opacity:0;transform:scale(1.3)}}
+@keyframes ic3{0%,61.9%{opacity:0}62%{opacity:1;transform:scale(1.8)}66%{opacity:1;transform:scale(1)}69.5%{opacity:1}70%,100%{opacity:0}}
+@keyframes ic2{0%,69.9%{opacity:0}70%{opacity:1;transform:scale(1.8)}74%{opacity:1;transform:scale(1)}77.5%{opacity:1}78%,100%{opacity:0}}
+@keyframes ic1{0%,77.9%{opacity:0}78%{opacity:1;transform:scale(1.8)}82%{opacity:1;transform:scale(1)}85.5%{opacity:1}86%,100%{opacity:0}}
+@keyframes iready{0%,85.9%{opacity:0}86%{opacity:1;transform:scale(1.6)}91%{opacity:1;transform:scale(1)}100%{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.intro *{animation:none!important}.intro .ready{opacity:1}.intro .idim{opacity:.6}.intro .isv{display:none}}
+.seg button:disabled{opacity:.4}
+.intro *{animation-delay:var(--e,0ms)!important}
+.plist .prow button.rolebtn.r-bat{background:#2f7fd8}.plist .prow button.rolebtn.r-bowl{background:#d6453d}.plist .prow button.rolebtn.r-ar{background:#2c9a62}
+.plist .prow button.rolebtn{min-width:44px;height:26px;font-weight:700;letter-spacing:.04em}
+.btn .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div id="scene" aria-hidden="true"><svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg"><g class="st"><circle cx="40" cy="50" r="1.6"/><circle cx="120" cy="90" r="1.2"/><circle cx="200" cy="40" r="1.8"/><circle cx="270" cy="110" r="1.2"/><circle cx="360" cy="30" r="1.5"/><circle cx="80" cy="170" r="1.3"/><circle cx="240" cy="190" r="1.5"/></g><g class="cl"><ellipse cx="70" cy="130" rx="70" ry="20"/><ellipse cx="120" cy="116" rx="46" ry="24"/><ellipse cx="320" cy="330" rx="80" ry="20"/><ellipse cx="364" cy="318" rx="44" ry="22"/><ellipse cx="80" cy="560" rx="90" ry="20"/><ellipse cx="140" cy="548" rx="50" ry="24"/></g><g class="fg"><circle class="h" cx="319" cy="62" r="9"/><path d="M318 76L304 118" stroke-width="16"/><path d="M320 80L344 42" stroke-width="7"/><path d="M314 86L290 100" stroke-width="7"/><path d="M304 118L326 146L322 178" stroke-width="10"/><path d="M302 120L282 148L256 162" stroke-width="10"/></g><circle cx="346" cy="38" r="6" fill="#d8342b"/><path d="M262 124Q268 44 332 22" stroke="#d4a937" stroke-width="3" fill="none" opacity=".8"/><path class="gr" d="M0 700Q200 676 400 696V800H0Z"/><path class="pi" d="M120 800L176 714L292 708L400 772V800Z"/><path class="cr" d="M150 762L400 738" fill="none"/></svg></div>
+<div id="app"></div>
+<script>
+(function(){
+'use strict';
+function createApp(root, claudeApi, opts){
+opts = opts || {};
+const LS = opts.lsKey || 'cricket-auction:last';
+const GRACE = 600, RESULT_MS = 3200, INTRO_MS = 9000, HB_MS = 5000, HB_DEAD = 20000, CHAT_KEEP = 40, CHAT_FETCH = 60;
+const ROLES = { BAT:{ n:'Batter' }, BOWL:{ n:'Bowler' }, AR:{ n:'All-rounder' } };
+const ROLE_ORDER = ['BAT','BOWL','AR'];
+const COLORS = ['#e2483d','#e3b341','#3fb67a','#4aa3e8','#b07be8','#ef8a3c','#2fc4c4','#e86fa6','#84cc16','#d946ef','#94a3b8','#92400e'];
+const SAMPLE = 'Virat Kohli 6 BAT 9\nBabar Azam 6 BAT 9\nJasprit Bumrah 5 BOWL 9\nMitchell Starc 7 BOWL 8\nShaheen Afridi 4 BOWL 8\nRohit Sharma 6 BAT 9\nRashid Khan 5 BOWL 8\nPat Cummins 5 BOWL 8\nBen Stokes 4 AR 8\nJos Buttler 5 BAT 8\nHardik Pandya 4 AR 8\nMS Dhoni 4 BAT 7\nRishabh Pant 3 BAT 7\nFakhar Zaman 2 BAT 6\nMohammad Rizwan 4 BAT 7\nShadab Khan 2 AR 6\nKane Williamson 3 BAT 7\nGlenn Maxwell 3 AR 7\nSuryakumar Yadav 4 BAT 8\nRavindra Jadeja 3 AR 8\nKL Rahul 3 BAT 7\nShubman Gill 3 BAT 7\nHaris Rauf 2 BOWL 6\nNaseem Shah 2 BOWL 6';
+
+const S = {
+  db:null, user:null, uid:null, canWrite:null, connecting:true,
+  code:null, room:null, members:[], state:null, rx:0, judging:null,
+  tab:'main', sel:null, myXI:null, myLocked:false, xiInit:false,
+  form:{}, open:{}, judgeDoc:null, sheet:false, peek:null, un:[], bidUn:null, pendingBid:null, endAsk:false,
+  lastStatus:null, lastKey:null, fullLobby:false, bidN:0,
+  profile:null, chat:[], chatOpen:false, chatUnread:0, chatSeen:0, chatLast:0, colorOpen:false, hb:null, hbAt:0, runnerSync:false, handOpen:false, shut:{}, counted:{}
+};
+if (opts.prefillCode) S.form.code = opts.prefillCode;
+if (opts.prefillInv) S.form.inv = opts.prefillInv;
+root.innerHTML = '<div id="view"></div><div id="chat"></div><div id="toast" aria-live="polite"></div>';
+const V = root.querySelector('#view'), T = root.querySelector('#toast'), CH = root.querySelector('#chat');
+
+/* ---------- tiny helpers ---------- */
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const LP = opts.lsPrefix || '';
+const ls = {
+  get(k){ try{ return localStorage.getItem(LP + k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(LP + k, v); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(LP + k); }catch(e){} }
+};
+S.theme = ls.get('ca:theme') || 'sky'; S.sound = ls.get('ca:sound') !== '0';
+document.documentElement.setAttribute('data-theme', S.theme);
+let ac = null;
+function audio(){ try{ if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); }catch(e){} return ac; }
+function knock(t, v){
+  const o = ac.createOscillator(), g = ac.createGain(), n = ac.createBuffer(1, Math.floor(ac.sampleRate * .05), ac.sampleRate), c = n.getChannelData(0), s = ac.createBufferSource(), g2 = ac.createGain();
+  o.type = 'triangle'; o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(55, t + .12);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(v, t + .006); g.gain.exponentialRampToValueAtTime(.0001, t + .2);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + .22);
+  for (let i = 0; i < c.length; i++) c[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / c.length, 3);
+  g2.gain.value = v * .6; s.buffer = n; s.connect(g2); g2.connect(ac.destination); s.start(t);
+}
+function hammer(sold){ if (!S.sound || !audio()) return; const t = ac.currentTime; knock(t, sold ? .9 : .4); if (sold) knock(t + .17, 1); }
+const vib = p => { try{ if (S.sound && navigator.vibrate) navigator.vibrate(p); }catch(e){} };
+function fx(p, n){
+  if (!p || !n || !S.room) return;
+  if (p.phase !== 'result' && n.phase === 'result' && n.last){ hammer(!!n.last.to); vib(n.last.to === S.uid ? [90,50,90,50,220] : n.last.to ? 60 : 0); }
+  else if (n.phase === 'bidding' && p.cur && n.cur && p.cur.pid === n.cur.pid && p.cur.leader === S.uid && n.cur.leader && n.cur.leader !== S.uid) vib([40,40,40]);
+}
+let toastT = 0, lastToast = '';
+function toast(m){ T.textContent = m; T.className = 'show'; clearTimeout(toastT); toastT = setTimeout(()=>{ T.className = ''; }, 2800); }
+function onErr(e){
+  console.error(e);
+  const c = e && e.code;
+  const m = (c === 'permission-denied' || c === 'invalid_argument') ? "Firebase blocked that save. Check the security rules from the setup guide." :
+            (c === 'resource-exhausted' || c === 'quota_exceeded') ? "Firebase's free daily limit may be used up. Try again tomorrow." : 'Connection hiccup. Check your network.';
+  if (m !== lastToast || !T.classList.contains('show')) toast(m);
+  lastToast = m;
+}
+function genCode(){
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = new Uint32Array(5); crypto.getRandomValues(r);
+  let s = ''; for (const x of r) s += A[x % A.length]; return s;
+}
+function uid8(){ const r = new Uint32Array(2); crypto.getRandomValues(r); return 'p' + r[0].toString(36) + r[1].toString(36).slice(0,3); }
+function shuffle(a){
+  a = a.slice(); const r = new Uint32Array(a.length); crypto.getRandomValues(r);
+  for (let i = a.length - 1; i > 0; i--){ const j = r[i] % (i + 1); const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+const ROLE_RE = /(?:^|\s)(bat|batter|batsman|bowl|bowler|ar|all-?rounder|allrounder|wk)(?=\s|$)/ig;
+function normRole(t){ t = String(t).toLowerCase().replace('-', ''); if (/^bowl/.test(t)) return 'BOWL'; if (/^(bat|wk)/.test(t)) return 'BAT'; return 'AR'; }
+function parseList(text){
+  const out = [], bad = [];
+  for (const raw of String(text).split(/\n|;/)){
+    let line = raw.trim(); if (!line) continue;
+    let role = 'AR', last = null, mm; const re = new RegExp(ROLE_RE.source, 'ig');
+    while ((mm = re.exec(line))) last = mm;
+    if (last){ role = normRole(last[1]); line = (line.slice(0, last.index) + ' ' + line.slice(last.index + last[0].length)).trim(); }
+    const m = line.match(/^(.*?)[\s,:\-–—=@]*?(\d+(?:\.\d+)?)\s*(?:cr|crore|crores|c)?(?:[\s,:\/]+(\d+(?:\.\d+)?)\s*(?:pts?|points?|p)?)?\s*$/i);
+    if (!m || !m[1].trim()){ bad.push(raw.trim()); continue; }
+    out.push({ id: uid8(), name: m[1].trim().slice(0,28), base: Math.max(1, Math.min(100, Math.round(parseFloat(m[2])))), role, pts: m[3] ? Math.max(1, Math.min(10, Math.round(parseFloat(m[3])))) : 5 });
+  }
+  return { out, bad };
+}
+/* ---------- derived data ---------- */
+let _pmFor = null, _pm = {};
+function pMap(){
+  if (_pmFor !== S.room){ _pmFor = S.room; _pm = {}; for (const p of ((S.room && S.room.players) || [])) _pm[p.id] = p; }
+  return _pm;
+}
+const cfg = () => S.room.cfg;
+const iAmHost = () => !!(S.room && S.room.hostId === S.uid);
+const me = () => S.members.find(m => m.uid === S.uid) || null;
+const teamIdx = u => S.members.findIndex(m => m.uid === u);
+const teamName = u => { const m = S.members.find(x => x.uid === u); return m ? m.team : 'A team'; };
+let _cmFor = null, _cm = {};
+function colorMap(){
+  if (_cmFor !== S.members){
+    _cmFor = S.members; _cm = {}; const used = new Set();
+    for (const m of S.members){ if (m.color && COLORS.includes(m.color) && !used.has(m.color)){ _cm[m.uid] = m.color; used.add(m.color); } }
+    for (const m of S.members){ if (_cm[m.uid]) continue; const c = COLORS.find(x => !used.has(x)) || COLORS[0]; _cm[m.uid] = c; used.add(c); }
+  }
+  return _cm;
+}
+const teamColor = u => colorMap()[u] || COLORS[0];
+function inkOn(h){ const n = parseInt(h.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (r * 299 + g * 587 + b * 114) / 1000 > 150 ? '#10231a' : '#ffffff'; }
+const soldAll = () => (S.state && S.state.sold) || [];
+const teamSold = u => soldAll().filter(x => x.to === u);
+const soldCount = (st, u) => st.sold.filter(x => x.to === u).length;
+const count = u => teamSold(u).length;
+const champ = () => (S.room && S.room.champ) || null;
+const gameNo = () => (S.room && S.room.game) || 1;
+const budgetOf = u => S.room.budget + (champ() ? ((champ().carry || {})[u] || 0) : 0);
+const purse = u => budgetOf(u) - teamSold(u).reduce((a,x) => a + x.price, 0);
+const mode = () => (S.room && S.room.cfg && S.room.cfg.mode) || ((S.room && S.room.cfg && S.room.cfg.judgeMode === 'none') ? 'nojudge' : 'judge');
+const isAuctioneer = () => !!(S.room && S.uid && (S.room.auctioneer || S.room.hostId) === S.uid);
+const isMys = pid => !!(S.state && S.state.mys && S.state.mys === pid && !S.state.mysShown);
+const pName = pid => isMys(pid) ? 'Mystery Player' : ((pMap()[pid] || {}).name || 'Player');
+const pRole = pid => isMys(pid) ? null : ((pMap()[pid] || {}).role || 'AR');
+const teamPoints = u => teamSold(u).reduce((a, x) => a + ((pMap()[x.pid] || {}).pts || 0), 0);
+const roleChip = (r, lg) => r ? '<span class="role r-' + r.toLowerCase() + (lg ? ' lg' : '') + '">' + (lg ? ROLES[r].n : r) + '</span>' : '';
+const rc = r => r ? '<b class="rc r-' + r.toLowerCase() + '">' + r + '</b>' : '';
+const tpill = u => { const c = teamColor(u); return '<span class="tpill" style="background:' + c + ';color:' + inkOn(c) + '">' + esc(teamName(u)) + '</span>'; };
+const xiSize = () => Math.min(11, S.room.cfg.minSquad);
+const xiLabel = () => xiSize() === 11 ? 'Playing XI' : 'Playing ' + xiSize();
+const auctionOver = () => !!S.room && S.room.status !== 'lobby' && S.room.status !== 'auction';
+const isDQ = u => auctionOver() && count(u) < cfg().minSquad;
+const judgeUid = () => cfg().judgeMode === 'host' ? S.room.hostId : (cfg().judgeMode === 'friend' && S.judgeDoc ? S.judgeDoc.uid : null);
+const amJudge = () => !!S.uid && judgeUid() === S.uid;
+
+function maxBid(u){
+  const c = cfg(), n = count(u); if (n >= c.maxSquad) return 0;
+  const st = S.state, pm = pMap();
+  const pool = [...(st.queue || []), ...(st.unsold || [])].map(id => pm[id] ? pm[id].base : null).filter(x => x != null).sort((a,b) => a - b);
+  const needAfter = Math.max(0, c.minSquad - (n + 1));
+  const reserve = pool.slice(0, needAfter).reduce((a,b) => a + b, 0);
+  return purse(u) - reserve;
+}
+function anyEligible(){
+  const c = S.state.cur;
+  return S.members.some(m => count(m.uid) < cfg().maxSquad && maxBid(m.uid) >= c.base);
+}
+function finalXI(m){
+  const size = xiSize(), squad = teamSold(m.uid).map(x => x.pid);
+  let xi = [...new Set((m.xi || []).filter(id => id && squad.includes(id)))];
+  for (const pid of squad){ if (xi.length >= size) break; if (!xi.includes(pid)) xi.push(pid); }
+  return xi.slice(0, size);
+}
+
+/* ---------- coalescing writers (single writer per doc, newest wins) ---------- */
+function writer(refFn){
+  let pend = null, busy = false;
+  return async function(data){
+    pend = data; if (busy) return; busy = true;
+    while (pend){ const d = pend; pend = null; try{ await refFn().set(d); }catch(e){ onErr(e); } }
+    busy = false;
+  };
+}
+const writeState = writer(() => S.db.doc('rooms/' + S.code + '/live/state'));
+const writeRoom = writer(() => S.db.doc('rooms/' + S.code));
+const writeJudging = writer(() => S.db.doc('rooms/' + S.code + '/live/judging'));
+function commitState(n){ n.v = (S.state ? S.state.v : gameNo() * 1000000) + 1; fx(S.state, n); S.state = n; S.rx = performance.now(); rerender(); return writeState(n); }
+function onNewGame(){
+  S.state = null; S.judging = null; S.sel = null; S.myXI = []; S.myLocked = false; S.xiInit = true; S.peek = null; S.open = {}; S.shut = {};
+  S.runnerSync = false; S.tab = 'main'; S.handOpen = false; S.endAsk = false; S.closeAsk = false;
+  if (me() && S.db) memberRef(S.uid).update({ xi:[], locked:false, retain:null }).catch(onErr);
+}
+function commitRoom(n){ const pg = gameNo(); n.v = (S.room.v || 0) + 1; S.room = n; if (gameNo() !== pg) onNewGame(); rerender(true); return writeRoom(n); }
+function commitJudging(n){ n.v = (S.judging ? S.judging.v : gameNo() * 1000000) + 1; S.judging = n; rerender(); return writeJudging(n); }
+const memberRef = u => S.db.doc('rooms/' + S.code + '/members/' + u);
+let saveT = 0;
+function saveMine(now){
+  clearTimeout(saveT);
+  const go = () => { if (!me()) return; memberRef(S.uid).update({ xi: S.myXI, locked: S.myLocked }).catch(onErr); };
+  if (now) go(); else saveT = setTimeout(go, 350);
+}
+
+/* ---------- host engine: the host's phone is the auctioneer ---------- */
+const seen = {};
+function newLot(st, pid){
+  const p = pMap()[pid], ms = cfg().baseSec * 1000;
+  st.cur = { pid, base: p.base, price: p.base, leader: null, bids: 0, extra: false };
+  st.endsAt = Date.now() + ms; st.rem = ms; st.paused = false; st.phase = 'bidding';
+  return st;
+}
+const pick = a => { const r = new Uint32Array(1); crypto.getRandomValues(r); return a[r[0] % a.length]; };
+function retainOk(u, prev){ const ch = champ(); return !!ch && ((ch.lastRet || {})[u] || '') !== prev.name.toLowerCase() && prev.price <= budgetOf(u); }
+function retained(){
+  const ch = champ(); if (!ch || gameNo() < 2) return [];
+  const out = [];
+  for (const m of S.members){
+    if (!m.retain) continue;
+    const prev = ((ch.rosters || {})[m.uid] || []).find(x => x.pid === m.retain);
+    if (prev && retainOk(m.uid, prev)) out.push({ uid:m.uid, prev });
+  }
+  return out;
+}
+function startIssues(){
+  const r = S.room, c = r.cfg, n = S.members.length, out = [];
+  const rets = retained(), names = new Set(rets.map(x => x.prev.name.toLowerCase()));
+  const pool = r.players.filter(p => !p.ret && !names.has(p.name.toLowerCase())), P = pool.length;
+  if (n < 1) out.push('Wait for at least one team to join.');
+  if (P < 1) out.push('Add the players you want to auction.');
+  if (n * c.minSquad > P + rets.length) out.push(n + ' team' + (n === 1 ? '' : 's') + ' x ' + c.minSquad + ' minimum needs ' + (n * c.minSquad - rets.length) + ' players. You have ' + P + '.');
+  const cheapest = pool.map(p => p.base).sort((a,b) => a - b).slice(0, c.minSquad).reduce((a,b) => a + b, 0);
+  if (P >= c.minSquad && cheapest > r.budget) out.push('The ' + c.minSquad + ' cheapest players cost ' + cheapest + 'cr, over the ' + r.budget + 'cr budget.');
+  if (c.mode !== 'nojudge' && c.mode !== 'points' && c.judgeMode === 'friend' && !S.judgeDoc) out.push('Waiting for a friend to join as judge. Or pick Judge (you), No Judge or Point System.');
+  if (champ() && c.mode === 'nojudge') out.push('A championship needs a winner each game. Pick Judge or Point System.');
+  for (const m of S.members){ if (m.retain && champ()){ const prev = ((champ().rosters || {})[m.uid] || []).find(x => x.pid === m.retain); if (prev && !retainOk(m.uid, prev)) out.push(m.team + ' cannot retain ' + prev.name + '.'); } }
+  return out;
+}
+function hostStart(){
+  if (!iAmHost() || startIssues().length) return;
+  const r0 = clone(S.room), rets = retained(), retNames = new Set(rets.map(x => x.prev.name.toLowerCase()));
+  const retPlayers = rets.map(x => ({ id:uid8(), name:x.prev.name, base:x.prev.base, role:x.prev.role || 'AR', pts:x.prev.pts || 5, ret:x.uid, rp:x.prev.price }));
+  r0.players = r0.players.filter(p => !p.ret && !retNames.has(p.name.toLowerCase())).concat(retPlayers);
+  const ids = shuffle(r0.players.filter(p => !p.ret).map(p => p.id));
+  const mys = (r0.cfg.mystery !== false && ids.length > 1) ? pick(ids) : null;
+  const st = { phase:'intro', paused:false, lot:0, round:1, queue:ids, unsold:[], sold:retPlayers.map(p => ({ pid:p.id, to:p.ret, price:p.rp, ret:true })), total:ids.length, last:null,
+    mys, mysShown:false, introEnd:Date.now() + INTRO_MS, introRem:INTRO_MS, v:0 };
+  S.state = null;
+  r0.status = 'auction'; r0.auctioneer = r0.hostId; S.room = r0; S.runnerSync = false;
+  commitState(st);
+  commitRoom(r0);
+  S.tab = 'main'; wakeLock();
+}
+function startFirst(){
+  const n = clone(S.state), q = n.queue; if (!q.length) return finishAuction(n);
+  n.queue = q.slice(1); n.lot = 1; delete n.introEnd; delete n.introRem; newLot(n, q[0]); commitState(n);
+}
+/* heartbeat + handover: the phone running the clock proves it is alive, others take over if it goes quiet */
+function beat(){
+  const t = performance.now(); if (t - (S.beatAt || 0) < HB_MS) return;
+  if (!['auction','xi','judging'].includes(S.room.status)) return;
+  S.beatAt = t; S.db.doc('rooms/' + S.code + '/live/hb').set({ uid:S.uid, n:Date.now() }).catch(() => {});
+}
+function runnerIds(){
+  const cur = S.room.auctioneer || S.room.hostId, ids = S.members.map(m => m.uid);
+  if (!ids.includes(S.room.hostId)) ids.push(S.room.hostId);
+  return ids.filter(u => u !== cur);
+}
+function watchdog(){
+  const r = S.room; if (!r || !['auction','xi','judging'].includes(r.status)) return;
+  if (!S.hbAt){ S.hbAt = performance.now(); return; }
+  const idx = runnerIds().indexOf(S.uid); if (idx < 0) return;
+  if (performance.now() - S.hbAt > HB_DEAD + idx * 10000){
+    S.hbAt = performance.now();
+    const n = clone(r); n.auctioneer = S.uid; n.handoverAt = Date.now(); commitRoom(n);
+    toast('The host went quiet. You are running the auction now.');
+  }
+}
+function rebase(){
+  const st = S.state, r = S.room, now = Date.now(), el = performance.now() - S.rx; if (!st) return;
+  const n = clone(st); let ch = false;
+  if (r.status === 'auction'){
+    if (st.phase === 'bidding' && !st.paused){ const rem = Math.max(500, (st.rem || 0) - el); n.endsAt = now + rem; n.rem = rem; ch = true; }
+    else if (st.phase === 'intro'){ const rem = Math.max(500, (st.introRem || INTRO_MS) - el); n.introEnd = now + rem; n.introRem = rem; ch = true; }
+    else if (st.phase === 'result'){ n.nextAt = now + 1500; ch = true; }
+  } else if (r.status === 'xi' && !st.xiPaused){ const rem = Math.max(1000, (st.xiRem || 0) - el); n.xiEnd = now + rem; n.xiRem = rem; ch = true; }
+  if (ch) commitState(n);
+}
+let wl = null;
+function wakeLock(){ try{ if (navigator.wakeLock) navigator.wakeLock.request('screen').then(l => { wl = l; }).catch(()=>{}); }catch(e){} }
+
+function xiTick(){
+  const st = S.state, now = Date.now();
+  if (st.xiPaused){ const n = clone(st); n.xiPaused = false; n.xiEnd = now + n.xiRem; return commitState(n); }
+  const act = S.members.filter(m => !isDQ(m.uid));
+  if (now >= st.xiEnd || !act.length || act.every(m => m.locked)) return cfg().judgeMode === 'none' ? finishNoJudge() : startJudging();
+}
+function hostTick(){
+  if (!S.room || !S.code) return;
+  if (!isAuctioneer()){ S.runnerSync = false; return watchdog(); }
+  if (!S.state) return;
+  beat();
+  if (!S.runnerSync){ S.runnerSync = true; if (S.room.status !== 'lobby') rebase(); return; }
+  const rs = S.room.status;
+  if (rs === 'xi') return xiTick();
+  if (rs === 'judging'){ if (S.judging && S.judging.done){ const r = clone(S.room); r.status = 'done'; commitRoom(r); } return; }
+  if (rs === 'done'){ if (!S.room.last || (S.room.last.game || 1) !== gameNo()) recordGame(); return; }
+  if (rs !== 'auction') return;
+  const st = S.state, now = Date.now(), extraMs = cfg().extraSec * 1000;
+  if (st.phase === 'intro'){ if (now >= st.introEnd) startFirst(); return; }
+  if (st.phase === 'bidding'){
+    if (st.paused) return;
+    if (!st.cur.leader && !anyEligible()) return resolve(true);
+    if (!st.cur.extra && now >= st.endsAt){
+      const n = clone(st); n.cur.extra = true;
+      n.endsAt = Math.max(st.endsAt + extraMs, now + 1000); n.rem = n.endsAt - now;
+      return commitState(n);
+    }
+    if (st.cur.extra && now >= st.endsAt + GRACE) return resolve(false);
+  } else if (st.phase === 'result' && now >= st.nextAt){
+    return nextLot();
+  }
+}
+function resolve(forceUnsold){
+  const st = clone(S.state), c = st.cur;
+  if (c.leader && !forceUnsold){
+    st.sold.push({ pid:c.pid, to:c.leader, price:c.price });
+    st.last = { pid:c.pid, to:c.leader, price:c.price };
+  } else {
+    st.unsold.push(c.pid);
+    st.last = { pid:c.pid, to:null, price:c.base };
+  }
+  if (st.mys && c.pid === st.mys) st.mysShown = true;
+  st.phase = 'result'; st.paused = false; st.nextAt = Date.now() + RESULT_MS;
+  commitState(st);
+}
+function nextLot(){
+  const st = clone(S.state), c = cfg();
+  const full = S.members.length > 0 && S.members.every(m => soldCount(st, m.uid) >= c.maxSquad);
+  let q = st.queue;
+  if (!full && q.length === 0 && st.round === 1 && st.unsold.length && S.members.some(m => soldCount(st, m.uid) < c.minSquad)){
+    q = shuffle(st.unsold); st.unsold = []; st.round = 2;
+  }
+  if (full || q.length === 0) return finishAuction(st);
+  st.queue = q.slice(1); st.lot++;
+  newLot(st, q[0]); commitState(st);
+}
+function finishAuction(st){
+  const xs = (cfg().xiSec || 60) * 1000; st.mysShown = true; st.phase = 'done'; st.xiRem = xs; st.xiEnd = Date.now() + xs; st.xiPaused = false; commitState(st);
+  const r = clone(S.room); r.status = 'xi'; commitRoom(r);
+}
+function hostOnBid(u, b){
+  if (!isAuctioneer() || !S.room || S.room.status !== 'auction') return;
+  const st = S.state; if (!st || st.phase !== 'bidding' || st.paused) return;
+  if (b.lot !== st.lot || b.pid !== st.cur.pid) return;
+  if (seen[u] >= b.n) return;
+  seen[u] = b.n;
+  if (!S.members.some(m => m.uid === u)) return;
+  const c = st.cur; if (c.leader === u) return;
+  const t = Math.round(b.target), minOk = c.leader ? c.price + 1 : c.price;
+  if (!(t >= minOk && t <= c.price + 5)) return;
+  if (t > maxBid(u)) return;
+  const n = clone(st), now = Date.now();
+  n.cur.price = t; n.cur.leader = u; n.cur.bids++;
+  if (n.cur.extra) n.endsAt = now + cfg().extraSec * 1000;
+  n.rem = Math.max(0, n.endsAt - now);
+  commitState(n);
+}
+function hostPause(){
+  const n = clone(S.state), now = Date.now(); if (n.phase !== 'bidding') return;
+  if (!n.paused){ n.rem = Math.max(0, n.endsAt - now); n.paused = true; } else { n.paused = false; n.endsAt = now + n.rem; }
+  commitState(n);
+}
+function hostEnd(){
+  const st = clone(S.state);
+  if (st.phase === 'bidding' && st.cur.leader) st.sold.push({ pid:st.cur.pid, to:st.cur.leader, price:st.cur.price });
+  else if (st.phase === 'bidding') st.unsold.push(st.cur.pid);
+  finishAuction(st);
+}
+
+/* ---------- player: bidding ---------- */
+function bidInfo(){
+  const st = S.state, c = st.cur, m = me();
+  if (!m) return { can:false, reason:"You're watching this auction." };
+  if (st.phase !== 'bidding') return { can:false, reason:'Next player is coming up.' };
+  if (st.paused) return { can:false, reason:'The host paused the auction.' };
+  if (c.leader === S.uid) return { can:false, reason:'You hold the top bid. Wait for a rival.' };
+  if (count(S.uid) >= cfg().maxSquad) return { can:false, reason:'Your squad is full.' };
+  const mb = maxBid(S.uid);
+  if (mb < c.base) return { can:false, reason:"You can't afford this player and still fill your minimum squad." };
+  return { can:true, max:mb };
+}
+function bidLocked(){ const p = S.pendingBid; return !!(p && S.state && p.lot === S.state.lot && Date.now() - p.t < 900); }
+function placeBid(t){
+  const st = S.state; if (!st || !bidInfo().can || bidLocked()) return;
+  const n = Math.max(S.bidN + 1, Date.now()); S.bidN = n;
+  S.pendingBid = { lot:st.lot, t:Date.now() };
+  S.db.doc('rooms/' + S.code + '/bids/' + S.uid).set({ n, lot:st.lot, pid:st.cur.pid, target:t, at:Date.now() }).catch(onErr);
+  rerender(); setTimeout(rerender, 950);
+}
+
+/* ---------- squad and playing XI ---------- */
+function ensureXI(){
+  const n = xiSize(), squad = teamSold(S.uid).map(x => x.pid);
+  let xi = Array.isArray(S.myXI) ? S.myXI.slice(0, n) : [];
+  while (xi.length < n) xi.push(null);
+  const used = new Set();
+  S.myXI = xi.map(id => { if (!id || !squad.includes(id) || used.has(id)) return null; used.add(id); return id; });
+}
+function placeInSlot(pid, i){
+  const xi = S.myXI, j = xi.indexOf(pid), old = xi[i];
+  xi[i] = pid; if (j >= 0 && j !== i) xi[j] = old;
+  saveMine();
+}
+function xiTapPlayer(pid){
+  if (S.myLocked) return; ensureXI(); const s = S.sel;
+  if (s && s.k === 's'){ placeInSlot(pid, s.i); S.sel = null; }
+  else if (s && s.k === 'p' && s.id === pid){ S.sel = null; }
+  else S.sel = { k:'p', id:pid };
+  rerender();
+}
+function xiTapSlot(i){
+  if (S.myLocked) return; ensureXI(); const s = S.sel, xi = S.myXI;
+  if (s && s.k === 'p'){ placeInSlot(s.id, i); S.sel = null; }
+  else if (s && s.k === 's'){ if (s.i !== i){ const t = xi[i]; xi[i] = xi[s.i]; xi[s.i] = t; saveMine(); } S.sel = null; }
+  else if (xi[i]) S.sel = { k:'s', i };
+  rerender();
+}
+function xiAuto(){
+  if (S.myLocked) return; ensureXI();
+  const used = new Set(S.myXI.filter(Boolean));
+  for (const x of teamSold(S.uid)){ if (!used.has(x.pid)){ const i = S.myXI.indexOf(null); if (i < 0) break; S.myXI[i] = x.pid; used.add(x.pid); } }
+  S.sel = null; saveMine(); rerender();
+}
+
+/* ---------- judging ---------- */
+function startJudging(){
+  const c = cfg();
+  const teams = S.members.filter(m => count(m.uid) >= c.minSquad).map(m => ({ uid:m.uid, xi:finalXI(m) }));
+  if (!teams.length) return finishNoJudge();
+  const ju = judgeUid();
+  let order = teams.filter(t => t.uid !== ju).map(t => t.uid);
+  if (!order.length) order = teams.map(t => t.uid);
+  S.judging = null;
+  commitJudging({ teams, order, ti:0, pi:0, marks:{}, done:false, v:0 });
+  const r = clone(S.room); r.status = 'judging'; commitRoom(r);
+  S.tab = 'main';
+}
+function finishNoJudge(){ const r = clone(S.room); r.status = 'done'; commitRoom(r); S.tab = 'main'; }
+function judgeStep(give){
+  const j = clone(S.judging); if (!j || j.done) return;
+  const tuid = j.order[j.ti], t = j.teams.find(x => x.uid === tuid);
+  j.marks[tuid] = j.marks[tuid] || [];
+  j.marks[tuid][j.pi] = give ? 1 : 0;
+  j.pi++;
+  if (j.pi >= t.xi.length){ j.ti++; j.pi = 0; if (j.ti >= j.order.length) j.done = true; }
+  commitJudging(j);
+}
+function judgeUndo(){
+  const j = clone(S.judging); if (!j) return;
+  if (j.done){ j.done = false; j.ti = j.order.length - 1; j.pi = j.teams.find(x => x.uid === j.order[j.ti]).xi.length - 1; }
+  else if (j.pi > 0) j.pi--;
+  else if (j.ti > 0){ j.ti--; j.pi = j.teams.find(x => x.uid === j.order[j.ti]).xi.length - 1; }
+  else return;
+  const tuid = j.order[j.ti]; if (j.marks[tuid]) j.marks[tuid][j.pi] = null;
+  commitJudging(j);
+}
+function computeResults(){
+  const j = S.judging, c = cfg(), md = mode();
+  const rows = S.members.map(m => ({ uid:m.uid, pid:m.pid || null, team:m.team, purse:purse(m.uid), n:count(m.uid), dq:count(m.uid) < c.minSquad, score:null, avg:false, xi:[], marks:[] }));
+  if (md === 'points'){
+    for (const row of rows) if (!row.dq) row.score = teamPoints(row.uid);
+  } else if (md === 'judge' && j && j.teams){
+    for (const row of rows){
+      const t = j.teams.find(x => x.uid === row.uid); if (!t) continue;
+      row.xi = t.xi; row.marks = (j.marks && j.marks[row.uid]) || [];
+      if (j.order.includes(row.uid)) row.score = row.marks.reduce((a,x) => a + (x === 1 ? 1 : 0), 0);
+    }
+    const scored = rows.filter(x => x.score !== null);
+    if (scored.length){
+      const avg = Math.round(scored.reduce((a,x) => a + x.score, 0) / scored.length);
+      for (const row of rows) if (!row.dq && row.score === null && j.teams.some(t => t.uid === row.uid)){ row.score = avg; row.avg = true; }
+    }
+  }
+  const ranked = rows.filter(x => !x.dq && x.score !== null).sort((a,b) => b.score - a.score || b.purse - a.purse);
+  const winners = ranked.length ? ranked.filter(x => x.score === ranked[0].score && x.purse === ranked[0].purse) : [];
+  return { rows, ranked, winners };
+}
+/* saved once per game by the phone running the clock: standings, XIs, championship points, purses, rosters */
+function recordGame(){
+  const r = clone(S.room), R = computeResults(), pm = pMap(), g = gameNo(), N = S.members.length, md = mode();
+  const rank = {}; let prev = null, pr = 0;
+  R.ranked.forEach((x, i) => { if (prev && prev.score === x.score && prev.purse === x.purse) rank[x.uid] = pr; else { pr = i + 1; rank[x.uid] = pr; } prev = x; });
+  const rows = R.rows.map(x => {
+    const m = S.members.find(q => q.uid === x.uid) || { uid:x.uid, xi:[] };
+    const ids = x.dq ? [] : (x.xi.length ? x.xi : finalXI(m));
+    return { uid:x.uid, pid:x.pid || null, team:x.team, score:x.score, rank:rank[x.uid] || null, pts:rank[x.uid] ? Math.max(1, N - rank[x.uid] + 1) : 0, purse:x.purse, n:x.n, dq:x.dq,
+      xi:ids.map(id => (pm[id] || {}).name || 'Player'), marks:x.marks.map(v => v === 1 ? 1 : v === 0 ? 0 : null) };
+  });
+  r.last = { game:g, mode:md, at:Date.now(), judge:judgeUid() || null, winners:R.winners.map(w => w.uid), rows };
+  const ch = r.champ;
+  if (ch){
+    ch.totals = ch.totals || {}; ch.wins = ch.wins || {}; ch.names = ch.names || {}; ch.pids = ch.pids || {};
+    for (const x of rows){ ch.names[x.uid] = x.team; ch.pids[x.uid] = x.pid; ch.totals[x.uid] = (ch.totals[x.uid] || 0) + x.pts; ch.wins[x.uid] = (ch.wins[x.uid] || 0) + (r.last.winners.includes(x.uid) ? 1 : 0); }
+    ch.history = (ch.history || []).concat([{ game:g, rows:rows.map(x => ({ uid:x.uid, team:x.team, rank:x.rank, pts:x.pts, score:x.score })) }]);
+    ch.rosters = {}; ch.carry = {}; ch.lastRet = {};
+    for (const m of S.members){
+      ch.rosters[m.uid] = teamSold(m.uid).map(x => { const p = pm[x.pid] || {}; return { pid:x.pid, name:p.name || 'Player', base:p.base || 1, role:p.role || 'AR', pts:p.pts || 5, price:x.price }; });
+      const row = rows.find(q => q.uid === m.uid);
+      ch.carry[m.uid] = row && row.dq ? 0 : Math.max(0, purse(m.uid));
+      const rt = teamSold(m.uid).find(x => x.ret); if (rt) ch.lastRet[m.uid] = ((pm[rt.pid] || {}).name || '').toLowerCase();
+    }
+    r.prevPlayers = r.players.filter(p => !p.ret).map(p => ({ name:p.name, base:p.base, role:p.role || 'AR', pts:p.pts || 5 }));
+    if (g >= ch.total) ch.done = true;
+  }
+  commitRoom(r);
+}
+function champRows(){
+  const ch = champ(); if (!ch) return [];
+  const ids = Object.keys(ch.totals || {});
+  const rows = ids.map(u => ({ uid:u, team:(ch.names || {})[u] || 'Team', total:ch.totals[u] || 0, wins:(ch.wins || {})[u] || 0, pid:(ch.pids || {})[u] || null }));
+  rows.sort((a,b) => b.total - a.total || b.wins - a.wins || a.team.localeCompare(b.team));
+  let pr = 0; rows.forEach((x, i) => { const p = rows[i - 1]; if (p && p.total === x.total && p.wins === x.wins) x.rank = pr; else { pr = i + 1; x.rank = pr; } });
+  return rows;
+}
+/* ---------- views ---------- */
+
+const INTRO_SVG = '<svg class="isv" viewBox="0 0 360 640" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+  '<defs><linearGradient id="isk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb0ea"/><stop offset="1" stop-color="#d4e9f7"/></linearGradient></defs>' +
+  '<rect width="360" height="640" fill="url(#isk)"/><rect y="168" width="360" height="472" fill="#3f9a5e"/>' +
+  '<polygon points="166,168 194,168 292,640 68,640" fill="#d8bf88"/>' +
+  '<g stroke="#fff" stroke-width="3" opacity=".85"><line x1="150" y1="232" x2="210" y2="232"/><line x1="100" y1="430" x2="260" y2="430"/></g>' +
+  '<g fill="#f6efd6"><rect x="177" y="170" width="3" height="24"/><rect x="183" y="170" width="3" height="24"/><rect x="189" y="170" width="3" height="24"/></g>' +
+  '<g><circle cx="196" cy="186" r="5" fill="#222a44"/><line x1="196" y1="191" x2="196" y2="208" stroke="#222a44" stroke-width="4" stroke-linecap="round"/>' +
+  '<line x1="196" y1="208" x2="191" y2="224" stroke="#222a44" stroke-width="3" stroke-linecap="round"/><line x1="196" y1="208" x2="202" y2="224" stroke="#222a44" stroke-width="3" stroke-linecap="round"/>' +
+  '<g class="ibat"><line x1="190" y1="196" x2="176" y2="228" stroke="#c8a060" stroke-width="5" stroke-linecap="round"/></g></g>' +
+  '<g class="ibowler"><circle cx="180" cy="420" r="16" fill="#1d3a6b"/><rect x="160" y="436" width="40" height="66" rx="14" fill="#2b5fb3"/>' +
+  '<line x1="170" y1="500" x2="166" y2="560" stroke="#1d3a6b" stroke-width="12" stroke-linecap="round"/><line x1="190" y1="500" x2="194" y2="560" stroke="#1d3a6b" stroke-width="12" stroke-linecap="round"/>' +
+  '<line x1="170" y1="446" x2="156" y2="486" stroke="#1d3a6b" stroke-width="9" stroke-linecap="round"/>' +
+  '<g class="iarm"><line x1="190" y1="442" x2="190" y2="494" stroke="#1d3a6b" stroke-width="9" stroke-linecap="round"/></g></g>' +
+  '<circle class="iball" cx="190" cy="398" r="7" fill="#c62828" stroke="#fff" stroke-width="1"/></svg>';
+function vIntro(){
+  const st = S.state, rem = isAuctioneer() ? st.introEnd - Date.now() : (st.introRem || INTRO_MS) - (performance.now() - S.rx);
+  const el = Math.min(INTRO_MS - 50, Math.max(0, INTRO_MS - rem));
+  return '<div class="intro" style="--e:-' + Math.round(el) + 'ms">' + INTRO_SVG + '<div class="idim"></div><div class="icap">AUCTION STARTING</div><div class="ihit">CRACK!</div>' +
+    '<div class="icd c3">3</div><div class="icd c2">2</div><div class="icd c1">1</div><div class="ready">GET READY</div><div class="iflash"></div></div>';
+}
+const newChamp = n => ({ total:n, game:1, history:[], totals:{}, wins:{}, names:{}, pids:{}, carry:{}, rosters:{}, lastRet:{}, done:false });
+function badgesOf(p){
+  const out = [], add = (ok, i, n) => { if (ok) out.push({ i, n }); };
+  add(p.games >= 1, '🏏', 'Debut'); add(p.games >= 10, '🔥', 'Regular'); add(p.games >= 25, '🎖️', 'Veteran');
+  add(p.wins >= 1, '🥇', 'Winner'); add(p.wins >= 5, '👑', 'Dominator');
+  add(p.hostN >= 3, '🔨', 'Auctioneer'); add(p.judgeN >= 3, '⚖️', 'Umpire'); add(p.invN >= 3, '📣', 'Recruiter');
+  add(p.champs >= 3, '🌟', 'Season ticket'); add(p.champWins >= 1, '🏆', 'Champion');
+  return out;
+}
+
+function vColors(){
+  if (!me()) return '';
+  const cm = colorMap(), mine = cm[S.uid], taken = new Set(Object.keys(cm).filter(u => u !== S.uid).map(u => cm[u]));
+  return '<div class="swatches" role="group" aria-label="Team colour">' + COLORS.map(c => '<button class="sw' + (c === mine ? ' on' : '') + '" style="background:' + c + '" data-act="color" data-c="' + c + '"' + (taken.has(c) ? ' disabled' : '') + ' aria-label="Colour ' + c + '"></button>').join('') + '</div>';
+}
+/* ----- profile (Player ID) ----- */
+async function makeProfile(name){
+  for (let i = 0; i < 6; i++){
+    const pid = 'CR-' + genCode(), s = await S.db.doc('profiles/' + pid).get();
+    if (s.exists) continue;
+    const rec = genCode(), p = { pid, owner:S.uid, name, games:0, wins:0, hostN:0, judgeN:0, invN:0, champs:0, champWins:0, createdAt:Date.now() };
+    await S.db.doc('vault/' + pid).set({ rec, owner:S.uid });
+    await S.db.doc('profiles/' + pid).set(p);
+    ls.set('ca:pid', pid); ls.set('ca:rec', rec); S.profile = p; return;
+  }
+}
+async function loadProfile(){
+  if (!S.db) return;
+  try{
+    const pid = ls.get('ca:pid');
+    if (pid){
+      const s = await S.db.doc('profiles/' + pid).get();
+      if (s.exists){
+        S.profile = s.data();
+        const rec = ls.get('ca:rec');
+        if (S.profile.owner !== S.uid && rec) await recoverProfile(pid, rec, true);
+        return;
+      }
+    }
+    await makeProfile('Player');
+  }catch(e){ onErr(e); }
+}
+async function recoverProfile(pid, rec, quiet){
+  pid = String(pid || '').trim().toUpperCase(); rec = String(rec || '').trim().toUpperCase();
+  if (!pid || !rec) return toast('Type your Player ID and recovery code.');
+  try{
+    const s = await S.db.doc('profiles/' + pid).get();
+    if (!s.exists) return toast('No profile with that Player ID.');
+    const p = s.data();
+    if (p.owner !== S.uid){
+      await S.db.doc('profiles/' + pid).update({ owner:S.uid, claim:rec });
+      const clean = Object.assign({}, p, { owner:S.uid }); delete clean.claim;
+      await S.db.doc('profiles/' + pid).set(clean); S.profile = clean;
+    } else S.profile = p;
+    ls.set('ca:pid', pid); ls.set('ca:rec', rec); S.form.recOpen = false;
+    if (!quiet) toast('Profile restored: ' + S.profile.name);
+    rerender(true);
+  }catch(e){ if (!quiet) toast('That recovery code did not work.'); console.error(e); }
+}
+function saveProfile(next){ S.profile = next; return S.db.doc('profiles/' + next.pid).set(next).catch(onErr); }
+function countStats(){
+  const r = S.room, L = r && r.last, p = S.profile; if (!L || !p || p.owner !== S.uid || !S.db) return;
+  const key = S.code + ':' + (r.createdAt || 0) + ':' + L.game;
+  if (!S.counted[key] && !ls.get('ca:cnt:' + key)){
+    const iHost = r.hostId === S.uid, row = L.rows.find(x => x.uid === S.uid), iJudge = !!L.judge && L.judge === S.uid;
+    S.counted[key] = 1;
+    if (iHost || row || iJudge){
+      ls.set('ca:cnt:' + key, '1');
+      const n = clone(S.profile); n.games++; if (row && L.winners.includes(S.uid)) n.wins++; if (iHost) n.hostN++; if (iJudge) n.judgeN++;
+      n.invN += S.members.filter(m => m.invBy && m.invBy === p.pid && m.uid !== S.uid).length;
+      saveProfile(n);
+    }
+  }
+  const ch = r.champ, ck = 'C' + S.code + ':' + (r.createdAt || 0);
+  if (ch && ch.done && !S.counted[ck] && !ls.get('ca:cnt:' + ck)){
+    S.counted[ck] = 1;
+    const rows = champRows(), mineRow = rows.find(x => x.uid === S.uid);
+    if (mineRow){
+      ls.set('ca:cnt:' + ck, '1');
+      const n = clone(S.profile); n.champs++; if (mineRow.rank === 1) n.champWins++; saveProfile(n);
+    }
+  }
+}
+/* ----- recent rooms ----- */
+const recents = () => { try{ return JSON.parse(ls.get('ca:recent') || '[]'); }catch(e){ return []; } };
+function touchRecent(code, label){
+  const l = recents().filter(x => x.code !== code); const old = recents().find(x => x.code === code);
+  l.unshift({ code, label: label != null ? label : (old ? old.label : ''), t:Date.now() }); ls.set('ca:recent', JSON.stringify(l.slice(0, 4)));
+}
+function dropRecent(code){ ls.set('ca:recent', JSON.stringify(recents().filter(x => x.code !== code))); }
+/* ----- chat ----- */
+function chatName(){ const m = me(); return m ? m.team : amJudge() && S.judgeDoc ? S.judgeDoc.team : iAmHost() ? 'Host' : (S.profile ? S.profile.name : 'Watcher'); }
+function renderChat(){
+  if (!S.code || !S.room || !S.chatOpen){ CH.innerHTML = ''; return; }
+  if (!CH.firstChild) CH.innerHTML = '<div class="shade" data-act="chatx"></div><div class="sheet chat" role="dialog" aria-label="Chat"><h3>Chat</h3><div class="msgs" id="cm"></div><div class="inline"><div style="flex:1"><input id="ci" type="text" maxlength="200" autocomplete="off" placeholder="Say something"></div><button class="btn sm pri" data-act="chatsend">Send</button></div><button class="btn sm" data-act="chatx">Close</button></div>';
+  const box = CH.querySelector('#cm'); if (!box) return;
+  box.innerHTML = S.chat.length ? S.chat.map(m => { const mem = S.members.find(x => x.uid === m.uid); const c = mem ? teamColor(m.uid) : null;
+    return '<div class="msg"><small>' + (c ? '<span class="tpill" style="background:' + c + ';color:' + inkOn(c) + '">' + esc(m.team) + '</span>' : esc(m.team)) + '</small>' + esc(m.text) + '</div>'; }).join('') : '<small>No messages yet. The last ' + CHAT_KEEP + ' are kept.</small>';
+  box.scrollTop = box.scrollHeight;
+}
+function sendChat(){
+  const inp = CH.querySelector('#ci'); if (!inp) return; const text = inp.value.trim().slice(0, 200); if (!text) return;
+  if (Date.now() - S.chatLast < 900) return; S.chatLast = Date.now(); inp.value = '';
+  S.db.collection('rooms/' + S.code + '/chat').add({ uid:S.uid, team:chatName(), text, at:Date.now() }).catch(onErr);
+}
+function onChatSnap(snap){
+  const docs = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
+  S.chat = docs.slice().sort((a,b) => a.at - b.at);
+  const lastAt = S.chat.length ? S.chat[S.chat.length - 1].at : 0;
+  if (!S.chatInit){ S.chatInit = true; S.chatSeen = lastAt; }
+  if (S.chatOpen) S.chatSeen = lastAt;
+  S.chatUnread = S.chat.filter(m => m.at > S.chatSeen && m.uid !== S.uid).length;
+  if (iAmHost() && docs.length >= CHAT_FETCH){ const old = S.chat.slice(0, docs.length - CHAT_KEEP); old.forEach(m => S.db.doc('rooms/' + S.code + '/chat/' + m.id).delete().catch(() => {})); }
+  renderChat(); rerender();
+}
+const dotHtml = u => '<i class="dot" style="background:' + teamColor(u) + '"></i>';
+function vLoading(){ return '<div class="wrap"><div class="card center"><h2>Loading room</h2><p class="muted">Hang on a second.</p></div></div>'; }
+
+function vProfile(){
+  if (!S.db) return '';
+  const p = S.profile;
+  if (!p) return '<section class="card"><h2>Your profile</h2><p class="muted">' + (S.connecting ? 'Loading...' : 'Could not load your Player ID yet.') + '</p></section>';
+  const stale = p.owner !== S.uid, bd = badgesOf(p);
+  const st = [['Games', p.games], ['Wins', p.wins], ['Host', p.hostN], ['Judge', p.judgeN], ['Invites', p.invN], ['Titles', p.champWins]];
+  const rec = ls.get('ca:rec');
+  return '<section class="card"><h2>Your profile</h2>' +
+    '<div class="row"><div><small>Player ID</small><div class="pid">' + esc(p.pid) + '</div></div><button class="btn sm" data-act="copypid">Copy</button></div>' +
+    (stale ? '<div class="note warn">This phone signed in differently. Open Recovery below and enter your code to reconnect.</div>' : '') +
+    '<label for="f-pn">Display name</label><div class="inline"><div style="flex:1"><input id="f-pn" type="text" name="profname" maxlength="20" autocomplete="off" value="' + esc(S.form.profname != null ? S.form.profname : p.name) + '"></div><button class="btn sm" data-act="savename">Save</button></div>' +
+    '<div class="stats" style="margin-top:12px">' + st.map(x => '<div class="stat"><b>' + (x[1] || 0) + '</b><small>' + x[0] + '</small></div>').join('') + '</div>' +
+    '<h3 style="margin-top:14px">Badges</h3>' + (bd.length ? '<div class="chips">' + bd.map(b => '<span class="chip">' + b.i + ' ' + b.n + '</span>').join('') + '</div>' : '<small>Play games to earn badges.</small>') +
+    '<div class="actions"><button class="btn ghost" data-act="togrec">' + (S.form.recOpen ? 'Hide recovery' : 'Recovery and restore') + '</button></div>' +
+    (S.form.recOpen ? '<small>Your recovery code is <b>' + esc(rec || 'not saved on this phone') + '</b>. Keep it safe. It restores this Player ID on another phone.</small>' +
+      '<label for="f-rp">Player ID to restore</label><input id="f-rp" type="text" name="rpid" maxlength="9" autocapitalize="characters" autocomplete="off" value="' + esc(S.form.rpid != null ? S.form.rpid : (stale ? p.pid : '')) + '" placeholder="CR-XXXXX">' +
+      '<label for="f-rr">Recovery code</label><input id="f-rr" type="text" name="rrec" maxlength="5" autocapitalize="characters" autocomplete="off" value="' + esc(S.form.rrec || '') + '">' +
+      '<div class="actions"><button class="btn pri" data-act="restore">Restore this profile</button></div>' : '') + '</section>';
+}
+function vHome(){
+  const rl = recents();
+  let warn = '';
+  if (S.connecting) warn = '<div class="note">Connecting to the live game service.</div>';
+  else if (!S.db) warn = '<div class="note warn">Live play needs the shared artifact link opened inside Claude. This view has no game service.</div>';
+  else if (S.canWrite === false) warn = '<div class="note warn">You have view-only access, so you can watch with a room code but not play. Ask the artifact owner to share it with you as an editor or contributor.</div>';
+  const jr = S.form.jrole || 'team';
+  return '<div class="wrap home"><div class="trow1"><span class="kicker">AUCTION NIGHT</span>' + tools(false) + '</div>' +
+    '<div class="brand"><div class="stump"><i></i><i></i><i></i></div><h1>Cricket<br>Auction</h1><p>Build a squad against your friends. Bid live, each on your own phone.</p></div>' + warn +
+    (rl.length && S.db ? '<section class="card"><h2>Your rooms</h2>' + rl.map(x => '<div class="row"><div><b>Room ' + esc(x.code) + '</b><small>' + esc(x.label || 'Auction') + '</small></div><button class="btn sm pri" data-act="resume" data-c="' + esc(x.code) + '">Go back in</button></div>').join('') + '</section>' : '') +
+    '<section class="card"><h2>Join a game</h2>' +
+      '<label for="f-code">Room code</label><input id="f-code" type="text" name="code" maxlength="6" autocapitalize="characters" autocomplete="off" value="' + esc(S.form.code || '') + '" placeholder="e.g. KX7P2">' +
+      '<div class="seg" style="margin-top:12px"><button data-act="jrole" data-r="team" class="' + (jr === 'team' ? 'on' : '') + '">Playing</button><button data-act="jrole" data-r="judge" class="' + (jr === 'judge' ? 'on' : '') + '">Judge</button><button data-act="jrole" data-r="watch" class="' + (jr === 'watch' ? 'on' : '') + '">Watch</button></div>' +
+      (jr === 'watch' ? '<small>You will follow the auction live and can chat, but not bid.</small>' :
+      '<label for="f-team">' + (jr === 'judge' ? 'Your name' : 'Your team name') + '</label><input id="f-team" type="text" name="team" maxlength="20" autocomplete="off" value="' + esc(myName()) + '" placeholder="e.g. Karachi Kings">') +
+      '<div style="height:12px"></div><button class="btn pri" data-act="join"' + (S.db ? '' : ' disabled') + '>' + (jr === 'watch' ? 'Watch auction' : 'Join auction') + '</button></section>' +
+    '<section class="card"><h2>Host a game</h2><p class="muted">You pick the players and rules, then run the auction.</p><div style="height:12px"></div><button class="btn" data-act="create"' + (S.db ? '' : ' disabled') + '>Create a room</button></section>' +
+    vProfile() +
+    (opts.onReset ? '<p class="center"><button class="btn sm ghost" data-act="resetfb">Change Firebase project</button></p>' : '') +
+    '</div>';
+}
+const myName = () => S.form.team != null ? S.form.team : (S.profile && S.profile.name !== 'Player' ? S.profile.name : '');
+function stepRow(label, key, val, min, max, suffix, hint, act){
+  return '<div class="row"><div><b>' + label + '</b>' + (hint ? '<small>' + hint + '</small>' : '') + '</div><div class="step">' +
+    '<button data-act="' + (act || 'cfg') + '" data-k="' + key + '" data-d="-1"' + (val <= min ? ' disabled' : '') + ' aria-label="Decrease">-</button><span>' + val + (suffix || '') + '</span>' +
+    '<button data-act="' + (act || 'cfg') + '" data-k="' + key + '" data-d="1"' + (val >= max ? ' disabled' : '') + ' aria-label="Increase">+</button></div></div>';
+}
+function hTeams(){
+  const ms = S.members, ch = champ(), later = !!ch && gameNo() > 1;
+  return '<h2>Teams <small>' + ms.length + ' of ' + cfg().maxTeams + ' joined</small></h2>' +
+    '<div class="chips">' + (ms.map(m => '<span class="chip">' + dotHtml(m.uid) + esc(m.team) + (m.uid === S.uid ? ' (you)' : '') +
+      (later && (ch.carry || {})[m.uid] ? ' <small>+' + ch.carry[m.uid] + 'cr</small>' : '') + (later && m.retain ? ' 🔒' : '') +
+      '<button data-act="kick" data-u="' + esc(m.uid) + '" aria-label="Remove team">x</button></span>').join('') || '<small>Nobody has joined yet. Share the code above.</small>') + '</div>' +
+    (me() ? '<label>Your team colour</label>' + vColors() : '') +
+    (later ? '<small>Not every team has to play. Tap x to leave one out. It keeps its championship points and can rejoin with the room code.</small>' : '');
+}
+function hJudge(){
+  const c = cfg(), md = mode();
+  if (md === 'nojudge') return '<small>No Judge: the auction ends with final squads and Playing XIs, and no winner.</small>';
+  if (md === 'points') return '<small>Point System: you give every player 1 to 10 points below. Points show while bidding. The whole squad counts and the highest total wins.</small>';
+  if (c.judgeMode === 'host') return '<small>You are the judge, so you will not have a team.</small>';
+  return S.judgeDoc ? '<div class="chips"><span class="chip">⚖️ ' + esc(S.judgeDoc.team) + '<button data-act="kick" data-u="' + esc(S.judgeDoc.uid) + '" aria-label="Remove judge">x</button></span></div>' : '<small>Waiting for a friend. They tap "Judge" on the join screen. Or choose Judge in Your role to do it yourself.</small>';
+}
+function hStart(){
+  const iss = startIssues();
+  return (iss.length ? '<small class="issue">' + esc(iss[0]) + (iss.length > 1 ? ' (+' + (iss.length - 1) + ' more)' : '') + '</small>' : '') + '<button class="btn pri big" data-act="start"' + (iss.length ? ' disabled' : '') + '>Start auction</button>';
+}
+function vChampTable(){
+  const ch = champ(); if (!ch) return '';
+  const rows = champRows(), hist = ch.history || [], cols = []; for (let g = 1; g <= ch.total; g++) cols.push(g);
+  if (!rows.length) return '<small>Standings appear after game 1.</small>';
+  const wmax = Math.max.apply(null, rows.map(x => x.wins));
+  return '<div class="tblwrap"><table class="ct"><thead><tr><th>#</th><th>Team</th>' + cols.map(g => '<th>G' + g + '</th>').join('') + '<th>Pts</th></tr></thead><tbody>' +
+    rows.map(x => '<tr><td>' + x.rank + '</td><td>' + dotHtml(x.uid) + ' ' + esc(x.team) + (x.uid === S.uid ? ' (you)' : '') +
+      (ch.done ? (x.rank === 1 ? '<span class="award">🏆 Champion</span>' : x.rank === 2 ? '<span class="award">🥈 Runner-up</span>' : x.rank === 3 ? '<span class="award">🥉 Third</span>' : '') + (wmax > 0 && x.wins === wmax ? '<span class="award">⭐ Most wins</span>' : '') : '') + '</td>' +
+      cols.map(g => { const h = hist.find(q => q.game === g), rr = h && h.rows.find(q => q.uid === x.uid); return '<td>' + (rr ? rr.pts + (rr.rank === 1 ? ' 🥇' : '') : '-') + '</td>'; }).join('') +
+      '<td class="tot">' + x.total + '</td></tr>').join('') + '</tbody></table></div>';
+}
+function vChampBlock(){
+  const ch = champ(); if (!ch) return '';
+  const r = S.room, g = gameNo(); let ctl = '';
+  if (r.status === 'done' && !r.last) ctl = '<p class="muted">Saving this game...</p>';
+  else if (r.status === 'done' && ch.done){ const top = champRows()[0]; ctl = '<div class="note good"><b>Championship complete.</b>' + (top ? ' ' + esc(top.team) + ' take the title.' : '') + '</div>'; }
+  else if (r.status === 'done' && iAmHost()) ctl = '<button class="btn pri big" data-act="newgame">Set up game ' + (g + 1) + ' of ' + ch.total + '</button><small>You choose the player list and which teams play. Unused purse carries over, and each team may retain one player.</small>';
+  else if (r.status === 'done') ctl = '<p class="muted">Waiting for the host to set up game ' + (g + 1) + '. You can come back any time with the room code.</p>';
+  return '<section class="card"><h2>Championship <small>Game ' + g + ' of ' + ch.total + '</small></h2>' + vChampTable() + (ctl ? '<div style="height:10px"></div>' + ctl : '') + '</section>';
+}
+function vRetain(){
+  const ch = champ(), m = me(); if (!ch || gameNo() < 2 || !m) return '';
+  const ro = (ch.rosters || {})[S.uid] || []; if (!ro.length) return '';
+  const rows = ro.map(x => {
+    const on = m.retain === x.pid, ok = retainOk(S.uid, x), why = ((ch.lastRet || {})[S.uid] || '') === x.name.toLowerCase() ? 'Retained last game' : x.price > budgetOf(S.uid) ? 'Too costly' : '';
+    return '<div class="retrow"><span class="nm">' + esc(x.name) + '</span>' + rc(x.role) + '<small>' + x.price + 'cr</small>' +
+      (ok || on ? '<button class="btn sm' + (on ? ' pri' : '') + '" data-act="retain" data-pid="' + esc(x.pid) + '">' + (on ? 'Retained' : 'Retain') + '</button>' : '<small>' + why + '</small>') + '</div>';
+  }).join('');
+  return '<section class="card"><h2>Retain a player</h2><small>Optional. Keep one player from last game at the price you paid. The same player cannot be retained two games in a row.</small><div style="height:6px"></div>' + rows + '</section>';
+}
+function vPurseNote(){
+  const ch = champ(); if (!ch || gameNo() < 2 || !me()) return '';
+  const c = (ch.carry || {})[S.uid] || 0;
+  return '<small>Your purse this game: <b>' + budgetOf(S.uid) + 'cr</b>' + (c ? ' (' + S.room.budget + ' + ' + c + ' carried over)' : '') + '</small>';
+}
+function vChampSetup(){
+  const r = S.room, ch = r.champ, g = gameNo();
+  if (g === 1){
+    return '<section class="card"><h2>Championship</h2><div class="row"><div><b>Play a championship</b><small>Several games, points add up, one winner</small></div><div class="seg" style="width:130px"><button data-act="champ" class="' + (!ch ? 'on' : '') + '">Off</button><button data-act="champ" class="' + (ch ? 'on' : '') + '">On</button></div></div>' +
+      (ch ? stepRow('Games', 'total', ch.total, 2, 7, '', 'Between 2 and 7', 'cgames') + '<small>Each game awards points by finishing place. Unused purse carries into the next game. Each team can retain one player (not twice in a row).</small>' : '') + '</section>';
+  }
+  return '<section class="card"><h2>Game ' + g + ' of ' + ch.total + '</h2>' + vChampTable() +
+    '<div class="actions"><button class="btn" data-act="reuselist"' + ((r.prevPlayers || []).length ? '' : ' disabled') + '>Reuse last game\'s list</button></div></section>';
+}
+function vLobbyHost(){
+  const r = S.room, c = r.cfg, md = mode(), role = c.judgeMode === 'host' && md === 'judge' ? 'judge' : (me() || S.form.wantPlay) ? 'play' : 'host';
+  const roles = [['play','Play a team']].concat(md === 'judge' ? [['judge','Judge']] : []).concat([['host','Just host']]);
+  const rb = roles.map(x => '<button data-act="hrole" data-r="' + x[0] + '" class="' + (role === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('');
+  const rn = role === 'judge' ? '<small>You score the Playing XIs and have no team.</small>' : role === 'host' ? '<small>You only run the auction.</small>' : me() ? '<small>You play as <b>' + esc(me().team) + '</b>.</small>' :
+    '<div class="inline"><div style="flex:1"><input type="text" name="hostteam" maxlength="20" aria-label="Your team name" value="' + esc(S.form.hostteam != null ? S.form.hostteam : (S.profile && S.profile.name !== 'Player' ? S.profile.name : '')) + '" placeholder="Your team name"></div><button class="btn sm" data-act="hostplay">Join</button></div>';
+  const pts = md === 'points';
+  const plist = r.players.map(p => '<div class="prow"><span>' + esc(p.name) + '</span><button class="rolebtn r-' + (p.role || 'AR').toLowerCase() + '" data-act="cycrole" data-id="' + esc(p.id) + '" aria-label="Change role">' + (p.role || 'AR') + '</button>' +
+    (pts ? '<span class="pts"><button data-act="pts" data-id="' + esc(p.id) + '" data-d="-1" aria-label="Fewer points">-</button><b>' + (p.pts || 5) + 'p</b><button data-act="pts" data-id="' + esc(p.id) + '" data-d="1" aria-label="More points">+</button></span>' : '') +
+    '<em>' + p.base + 'cr</em><button data-act="delp" data-id="' + esc(p.id) + '" aria-label="Remove ' + esc(p.name) + '">x</button></div>').join('');
+  const modeSeg = [['judge','Judge'],['nojudge','No Judge'],['points','Point System']].map(x => '<button data-act="mode" data-m="' + x[0] + '" class="' + (md === x[0] ? 'on' : '') + '"' + (champ() && x[0] === 'nojudge' ? ' disabled' : '') + '>' + x[1] + '</button>').join('');
+  const pr = S.form.prole || 'AR';
+  return '<div class="wrap lobbyhost"><div class="top"><div class="trow1"><span class="kicker">ROOM SETUP' + (champ() ? ' · GAME ' + gameNo() + ' OF ' + champ().total : '') + '</span>' + tools(true) + '</div></div>' +
+    '<section class="card"><small>Send the invite link, or tell friends to open the game, tap Join and type this code.</small><div class="code" data-act="copy">' + esc(r.code) + '</div>' + (opts.inviteUrl ? '<button class="btn gold" data-act="invite">Send invite link</button>' : '') + '</section>' +
+    '<section class="card" id="lb-teams">' + hTeams() + '</section>' + vChampSetup() +
+    '<section class="card"><h2>Your role</h2><div class="seg">' + rb + '</div><div style="margin-top:10px">' + rn + '</div><div style="margin-top:8px">' + vPurseNote() + '</div></section>' +
+    vRetain() +
+    '<section class="card"><h2>Rules</h2>' +
+      stepRow('Teams', 'maxTeams', c.maxTeams, 1, 8, '', 'Most teams that can join') +
+      '<div class="row"><div><b>Budget</b><small>Same for every team' + (champ() && gameNo() > 1 ? ', plus carried-over purse' : '') + '</small></div><div class="step"><span>' + r.budget + 'cr</span></div></div>' +
+      stepRow('Min squad', 'minSquad', c.minSquad, 1, 15, '', xiLabel2(c.minSquad) + '. Miss the minimum and you are out') +
+      stepRow('Max squad', 'maxSquad', c.maxSquad, 1, 25, '', 'Most players one team can buy') +
+      stepRow('Bid timer', 'baseSec', c.baseSec, 5, 15, 's', 'Time on the clock for each player') +
+      stepRow('Extra time', 'extraSec', c.extraSec, 2, 5, 's', 'A late bid resets this window') +
+      stepRow('XI time', 'xiSec', c.xiSec || 60, 30, 120, 's', 'Time to set the Playing XI after the auction. Ends early when every team locks') +
+      '<div class="row"><div><b>Mystery Player</b><small>One random player is hidden until sold. Even you will not know who</small></div><div class="seg" style="width:130px"><button data-act="mystery" class="' + (c.mystery === false ? 'on' : '') + '">Off</button><button data-act="mystery" class="' + (c.mystery !== false ? 'on' : '') + '">On</button></div></div>' +
+      '<div class="row" style="display:block"><b>Game mode</b><div class="seg" style="margin:8px 0">' + modeSeg + '</div><div id="lb-judge" style="margin-top:8px">' + hJudge() + '</div></div></section>' +
+    '<section class="card"><h2>Players <small>' + r.players.length + ' in the pool</small></h2>' +
+      (plist ? '<div class="plist">' + plist + '</div>' : '<p class="muted">No players yet. Add some below, or load a sample list to try the game.</p>') +
+      '<small>Tap a role tag to change it' + (pts ? ', and use - and + for points (1 to 10)' : '') + '. Nobody sees the auction order.</small>' +
+      '<div class="inline" style="margin-top:12px"><div style="flex:1"><label for="np-name">Player name</label><input id="np-name" type="text" name="pname" maxlength="28" autocomplete="off" value="' + esc(S.form.pname || '') + '"></div>' +
+      '<div style="width:80px"><label for="np-base">Base cr</label><input id="np-base" type="number" inputmode="numeric" min="1" max="100" name="pbase" value="' + esc(S.form.pbase || '') + '" placeholder="1"></div>' +
+      (pts ? '<div style="width:70px"><label for="np-pts">Points</label><input id="np-pts" type="number" inputmode="numeric" min="1" max="10" name="ppts" value="' + esc(S.form.ppts || '') + '" placeholder="5"></div>' : '') + '</div>' +
+      '<div class="seg" style="margin-top:10px">' + ROLE_ORDER.map(x => '<button data-act="prole" data-r="' + x + '" class="' + (pr === x ? 'on' : '') + '">' + ROLES[x].n + '</button>').join('') + '</div>' +
+      '<div class="actions"><button class="btn pri" data-act="addp">Add player</button><button class="btn" data-act="togglebulk">' + (S.form.bulkOpen ? 'Hide list box' : 'Paste a list') + '</button></div>' +
+      (S.form.bulkOpen ? '<label for="np-bulk">One per line: name, base, role' + (pts ? ', points' : '') + '. Like "Kohli 6 BAT 9"</label><textarea id="np-bulk" name="bulk" placeholder="Kohli 6 BAT 9&#10;Bumrah 5 BOWL 9&#10;Stokes 4 AR 8">' + esc(S.form.bulk || '') + '</textarea><div class="actions"><button class="btn pri" data-act="bulk">Add all lines</button></div>' : '') +
+      '<div class="actions"><button class="btn ghost" data-act="sample">Load 24 sample players</button>' + (r.players.length ? '<button class="btn ghost danger" data-act="clearp">Clear all</button>' : '') + '</div>' +
+    '</section><div class="startbar" id="lb-start">' + hStart() + '</div></div>';
+}
+function xiLabel2(min){ const n = Math.min(11, min); return 'Playing ' + (n === 11 ? 'XI' : n) + ' uses ' + n; }
+function updateLobbyDyn(){
+  const a = V.querySelector('#lb-teams'), b = V.querySelector('#lb-judge'), c = V.querySelector('#lb-start');
+  if (!a || !b || !c) { S.lastKey = null; return render(); }
+  a.innerHTML = hTeams(); b.innerHTML = hJudge(); c.innerHTML = hStart();
+  if (me() && V.querySelector('[name=hostteam]')) { S.fullLobby = true; render(); }
+}
+function vLobby(){
+  const r = S.room, c = r.cfg, m = me(), md = mode();
+  const jtxt = md === 'nojudge' ? 'No judge' : md === 'points' ? 'Point System (no judge)' : c.judgeMode === 'host' ? 'The host' : S.judgeDoc ? S.judgeDoc.team : 'A friend (not joined yet)';
+  return '<div class="wrap"><div class="top"><div class="trow1"><span class="kicker">WAITING ROOM' + (champ() ? ' · GAME ' + gameNo() + ' OF ' + champ().total : '') + '</span>' + tools(true) + '</div></div>' +
+    '<section class="card center"><small>Room code</small><div class="code">' + esc(r.code) + '</div>' +
+      (S.judgeDoc && S.judgeDoc.uid === S.uid ? '<p>You are the <b>judge</b>. Waiting for the host to start.</p>' : m ? '<p>You are <b>' + esc(m.team) + '</b>. Waiting for the host to start.</p>' + vPurseNote() : '<p class="muted">You are not a team in this room. You can watch once it starts.</p>') + '</section>' +
+    '<section class="card"><h2>Teams <small>' + S.members.length + ' of ' + c.maxTeams + '</small></h2><div class="chips">' +
+      (S.members.map(x => '<span class="chip">' + dotHtml(x.uid) + esc(x.team) + (x.uid === S.uid ? ' (you)' : '') + '</span>').join('') || '<small>No teams yet.</small>') + '</div>' +
+      (m ? '<label>Your team colour</label>' + vColors() : '') + '</section>' +
+    (champ() && gameNo() > 1 ? '<section class="card"><h2>Championship so far</h2>' + vChampTable() + '</section>' : '') + vRetain() +
+    '<section class="card"><h2>The rules</h2>' +
+      '<div class="row"><b>Mode</b><span>' + esc(jtxt) + '</span></div>' +
+      '<div class="row"><b>Budget</b><span>' + r.budget + 'cr each' + (champ() && gameNo() > 1 && m ? ' (you: ' + budgetOf(S.uid) + 'cr)' : '') + '</span></div>' +
+      '<div class="row"><b>Squad size</b><span>' + c.minSquad + ' to ' + c.maxSquad + '</span></div>' +
+      '<div class="row"><b>Players in the pool</b><span>' + r.players.length + '</span></div>' +
+      '<div class="row"><b>Bid timer</b><span>' + c.baseSec + 's, then ' + c.extraSec + 's extra</span></div>' +
+      (champ() ? '<div class="row"><b>Championship</b><span>' + champ().total + ' games</span></div>' : '') + '</section></div>';
+}
+/* --- shell --- */
+function vTop(){
+  const m = me(), r = S.room, k = { auction:'AUCTION', xi:'SQUADS', judging:'JUDGING', done:'RESULTS' }[r.status];
+  const nm = m ? esc(m.team) : amJudge() ? 'You are the judge' : 'Watching';
+  return '<div class="top"><div class="trow1"><span class="kicker">' + k + '</span>' + tools(true) + '</div><div class="trow2"><div><b>' + nm + '</b><small>Room ' + esc(r.code) + (iAmHost() ? ', you host' : '') + '</small></div>' +
+    (m && r.status !== 'done' ? '<div class="purse"><small>Purse left</small><b>' + purse(S.uid) + 'cr</b></div>' : '') + '</div></div>';
+}
+function vShell(){
+  const r = S.room, st = r.status, m = me();
+  const label = st === 'auction' ? 'Auction' : st === 'xi' ? 'Squads' : st === 'judging' ? 'Judging' : 'Results';
+  const tabs = [['main', label, '🔨']]; if (m) tabs.push(['squad', 'My squad', '👕']); tabs.push(['board', 'Board', '📊']); if (champ()) tabs.push(['champ', 'Champs', '🏆']);
+  if (!tabs.some(t => t[0] === S.tab)) S.tab = 'main';
+  const body = S.tab === 'squad' ? vSquad() : S.tab === 'board' ? vBoard() : S.tab === 'champ' ? '<section class="card"><h2>Championship <small>Game ' + gameNo() + ' of ' + champ().total + '</small></h2>' + vChampTable() + '</section>' : vMain();
+  const dq = m && isDQ(S.uid) ? '<div class="note warn"><b>You are disqualified.</b> Your squad has ' + count(S.uid) + ' of the ' + cfg().minSquad + ' players needed.</div>' : '';
+  const intro = st === 'auction' && S.state && S.state.phase === 'intro' ? vIntro() : '';
+  return '<div class="shell">' + vTop() + dq + body + '</div><nav class="tabs">' +
+    tabs.map(t => '<button data-act="tab" data-t="' + t[0] + '" class="' + (S.tab === t[0] ? 'on' : '') + '"><span>' + t[2] + '</span>' + t[1] + '</button>').join('') + '</nav>' + intro;
+}
+function vMain(){
+  const st = S.room.status;
+  if (st === 'auction') return vAuction();
+  if (st === 'xi') return vXiPhase();
+  if (st === 'judging') return (S.judging && S.judging.done) ? vResults() : vJudging();
+  return vResults();
+}
+
+/* --- auction --- */
+function vAuction(){
+  const st = S.state, r = S.room;
+  if (!st) return '<div class="card center"><h2>Getting ready</h2><p class="muted">The first player is about to come up.</p></div>';
+  if (st.phase === 'done') return '<div class="card center"><h2>Auction finished</h2><p class="muted">Moving on to squads.</p></div>';
+  if (st.phase === 'intro') return '<div class="card center"><h2>Auction starting</h2><p class="muted">Get ready to bid.</p></div>';
+  let note = '';
+  if (r.auctioneer && r.auctioneer !== r.hostId){
+    const nm = S.members.some(x => x.uid === r.auctioneer) ? teamName(r.auctioneer) : 'Another phone';
+    note = '<div class="note">' + (isAuctioneer() ? 'You are running the clock for everyone (handed over from the host).' : '⏱ ' + esc(nm) + ' is running the clock.') +
+      (iAmHost() ? ' <button class="btn sm" data-act="takeback">Take it back</button>' : '') + '</div>';
+  }
+  return note + vLot() + vBid() + vStrip() + (isAuctioneer() ? vHostBar() : '') + vRecent();
+}
+function vLot(){
+  const st = S.state, c = st.cur, p = pMap()[c.pid] || { name:'Player', base:c.base, role:'AR', pts:5 }, mys = isMys(c.pid), role = mys ? null : (p.role || 'AR'), md = mode();
+  let stamp = '';
+  if (st.phase === 'result' && st.last){
+    const nm = esc(pName(st.last.pid)), rv = st.mys && st.last.pid === st.mys ? '<small>Mystery Player revealed!</small>' : '';
+    stamp = st.last.to ?
+      '<div class="stamp"><div class="big">SOLD</div><p>' + nm + '</p>' + rv + '<p>to ' + tpill(st.last.to) + ' for ' + st.last.price + 'cr</p>' + (st.last.to === S.uid ? '<small>Added to your squad</small>' : '') + '</div>' :
+      '<div class="stamp un"><div class="big">UNSOLD</div><p>' + nm + '</p>' + rv + '<small>No one bid</small></div>';
+  }
+  const lead = st.paused ? '<b>Paused</b> by the host' : c.leader ? 'Top bid by ' + tpill(c.leader) + (c.leader === S.uid ? ' (you)' : '') : 'No bids yet';
+  return '<section class="lot' + (c.extra && st.phase === 'bidding' ? ' extra' : '') + ' rl-' + (role ? role.toLowerCase() : 'mys') + '">' +
+    '<div class="lotno"><span>Lot ' + st.lot + (st.round === 2 ? ' (second round)' : '') + '</span><span>' + st.queue.length + ' more to come</span></div>' +
+    '<h2 class="pname">' + (mys ? '❓ Mystery Player' : esc(p.name)) + '</h2>' +
+    '<div class="rolebar">' + (mys ? '<span class="role lg r-mys">Role hidden</span>' : roleChip(role, true)) + (md === 'points' ? '<span class="ptsb">' + (mys ? '? pts' : (p.pts || 5) + ' pts') + '</span>' : '') + '</div>' +
+    '<div class="base" style="margin-top:6px">Base price ' + c.base + 'cr</div>' +
+    '<div class="scoreboard"><div><small>Current bid</small><div class="price"><span>' + c.price + '</span><i>cr</i></div></div>' +
+    '<div class="clock"><small id="cl">' + (c.extra ? 'Extra time' : 'Time left') + '</small><div id="cd">-</div></div></div>' +
+    '<div class="segbar"><div id="bar"></div></div><div class="leader">' + lead + '</div>' + stamp + '</section>';
+}
+function vBid(){
+  const st = S.state, c = st.cur;
+  if (!me()) return '<div class="note">' + esc(bidInfo().reason) + (S.room.status === 'auction' ? ' Tap 💬 to chat.' : '') + '</div>';
+  const b = bidInfo(), ok = b.can && !bidLocked();
+  const open = (!c.leader && st.phase === 'bidding') ? '<button class="btn pri big" data-act="bid" data-t="' + c.price + '"' + (ok && c.price <= b.max ? '' : ' disabled') + '>Open at ' + c.price + 'cr</button>' : '';
+  const opts = [1,2,3,4,5].map(k => { const t = c.price + k; return '<button class="bidbtn" data-act="bid" data-t="' + t + '"' + (ok && t <= b.max ? '' : ' disabled') + '><b>+' + k + 'cr</b></button>'; }).join('');
+  const hold = b.can ? purse(S.uid) - b.max : 0;
+  const foot = b.can ? 'You can bid up to ' + b.max + 'cr.' + (hold > 0 ? ' ' + hold + 'cr stays reserved so you can still fill your minimum squad.' : '') : b.reason;
+  return open + '<div class="bids">' + opts + '</div><small>' + esc(foot) + '</small>' +
+    '<div class="actions" style="margin-top:6px"><button class="btn sm ghost" data-act="coltog"><i class="dot" style="background:' + teamColor(S.uid) + '"></i> Team colour</button></div>' + (S.colorOpen ? vColors() : '');
+}
+function vHostBar(){
+  const st = S.state, bid = st.phase === 'bidding', cands = runnerIds();
+  const away = S.room.auctioneer && S.room.auctioneer !== S.room.hostId;
+  return '<div class="hostbar"><button class="btn" data-act="pause"' + (bid ? '' : ' disabled') + '>' + (st.paused ? 'Resume' : 'Pause') + '</button>' +
+    '<button class="btn" data-act="hammer"' + (bid && st.cur.leader ? '' : ' disabled') + '>Sell now</button>' +
+    '<button class="btn" data-act="skip"' + (bid ? '' : ' disabled') + '>Skip</button>' +
+    '<button class="btn danger" data-act="' + (S.endAsk ? 'endyes' : 'endask') + '">' + (S.endAsk ? 'Confirm end' : 'End auction') + '</button></div>' +
+    '<div class="actions"><button class="btn sm" data-act="handask">Hand over the clock</button></div>' +
+    (S.handOpen ? '<div class="card"><h3>Hand the clock to</h3><div class="chips">' + (cands.map(u => '<button class="chip" data-act="handto" data-u="' + esc(u) + '">' + (S.members.some(m => m.uid === u) ? dotHtml(u) + esc(teamName(u)) : 'The host') + '</button>').join('') || '<small>Nobody else is here.</small>') + '</div><small>The auction carries on from exactly where it is.</small></div>' : '') +
+    '<small>' + (away ? 'You are running the clock for everyone.' : 'You run the clock for everyone. Keep this screen open and awake. If your phone drops, another team takes over automatically.') + '</small>';
+}
+function vRecent(){
+  const items = soldAll().filter(x => !x.ret).slice(-4).reverse();
+  if (!items.length) return '';
+  return '<div class="card recent"><h3>Recent sales</h3>' + items.map(x => '<div><b>' + esc(pName(x.pid)) + '</b> to ' + tpill(x.to) + ' for ' + x.price + 'cr</div>').join('') + '</div>';
+}
+const tools = leave => '<div class="tools"><button data-act="theme" aria-label="Switch theme">' + (S.theme === 'night' ? '☀️' : '🌙') + '</button><button data-act="sound" aria-label="Sound">' + (S.sound ? '🔊' : '🔇') + '</button>' +
+  (S.room ? '<button data-act="chat" aria-label="Chat">💬' + (S.chatUnread ? '<span class="ub">' + S.chatUnread + '</span>' : '') + '</button>' : '') +
+  (leave ? '<button class="lv" data-act="leave">Leave</button>' : '') + '</div>';
+const xiClock = () => '<div class="xiclock"><small>Time left to set the Playing XI</small><b class="xcd">-</b></div>';
+function vStrip(){
+  const ms = S.members, pk = S.peek, md = mode(); if (!ms.length) return '';
+  const sq = pk ? teamSold(pk) : [];
+  return '<div class="strip">' + ms.map(m => '<button class="tm' + (pk === m.uid ? ' on' : '') + '" data-act="peek" data-u="' + esc(m.uid) + '"><b>' + dotHtml(m.uid) + esc(m.team) + '</b><small>' + purse(m.uid) + 'cr left, ' + count(m.uid) + ' players' + (md === 'points' ? ', ' + teamPoints(m.uid) + ' pts' : '') + '</small></button>').join('') + '</div>' +
+    (pk && ms.some(m => m.uid === pk) ? '<div class="card"><h3>' + esc(teamName(pk)) + '</h3>' + (sq.length ? '<ol class="tsq">' + sq.map(x => '<li><b>' + esc(pName(x.pid)) + '</b> ' + rc(pRole(x.pid)) + ' ' + x.price + 'cr' + (md === 'points' ? ', ' + ((pMap()[x.pid] || {}).pts || 0) + ' pts' : '') + (x.ret ? ' (retained)' : '') + '</li>').join('') + '</ol>' : '<small>No players yet.</small>') + '</div>' : '');
+}
+function vSheet(){
+  const host = iAmHost(), lobby = S.room.status === 'lobby';
+  const p = host ? (lobby ? 'Keep the room and come back with the code, or close it for everyone.' : 'Pause and leave keeps the room, and you can return with the code. Ending it removes the room for everyone.') : (lobby ? 'Your spot will be freed.' : 'Your team stays in the game. You can rejoin with the room code.');
+  const b = host ? '<button class="btn pri" data-act="leaveGo">' + (lobby ? 'Keep room, leave' : 'Pause and leave') + '</button><button class="btn danger" data-act="leaveEnd">End room for everyone</button>' : '<button class="btn pri" data-act="leaveGo">Leave</button>';
+  return '<div class="shade" data-act="sheetx"></div><div class="sheet" role="dialog"><h3>Leave this room?</h3><p class="muted">' + p + '</p>' + b + '<button class="btn" data-act="sheetx">Stay</button></div>';
+}
+/* --- after the auction --- */
+function vXiPhase(){
+  const c = cfg(), active = S.members.filter(m => !isDQ(m.uid));
+  const rows = S.members.map(m => {
+    const dq = isDQ(m.uid);
+    return '<div class="row"><div><b>' + dotHtml(m.uid) + ' ' + esc(m.team) + '</b><small>' + count(m.uid) + ' players, ' + purse(m.uid) + 'cr left' + (dq ? '. Needs ' + c.minSquad + ' to qualify.' : '') + '</small></div>' +
+      (dq ? '<span class="badge bad">Disqualified</span>' : m.locked ? '<span class="badge ok">XI locked</span>' : '<span class="badge">Picking XI</span>') + '</div>';
+  }).join('');
+  let host;
+  if (!iAmHost()) host = '<p class="muted">' + (me() && !isDQ(S.uid) ? 'Set your ' + xiLabel() + ' in My squad and lock it. ' : '') + (cfg().judgeMode === 'none' ? 'Results show' : 'Judging starts') + ' when the time ends or every team locks.</p>';
+  else if (!active.length) host = '<p class="muted">No team reached the minimum squad, so there is nothing to judge.</p><button class="btn pri big" data-act="finish">Show results</button>';
+  else host = '<button class="btn pri big" data-act="' + (c.judgeMode === 'none' ? 'finish' : 'startj') + '">' + (c.judgeMode === 'none' ? 'Show results now' : 'Start judging now') + '</button>';
+  return xiClock() + '<section class="card"><h2>Auction <i>complete</i></h2>' + rows + '</section><section class="card">' + host + '</section>';
+}
+function vSquad(){
+  ensureXI();
+  const squad = teamSold(S.uid), size = xiSize(), pm = pMap(), locked = S.myLocked, inXI = new Set(S.myXI.filter(Boolean));
+  const left = squad.map((x, i) => '<button class="srow' + (S.sel && S.sel.k === 'p' && S.sel.id === x.pid ? ' sel' : '') + (inXI.has(x.pid) ? ' used' : '') + '" data-act="sq" data-pid="' + esc(x.pid) + '"' + (locked ? ' disabled' : '') + '><i>' + (i + 1) + '</i><span>' + esc(pm[x.pid].name) + '</span>' + rc(pm[x.pid].role || 'AR') + '<em>' + x.price + 'cr</em></button>').join('') ||
+    '<p class="muted">No players yet. Win a bid and they show up here, in the order you bought them.</p>';
+  const right = S.myXI.map((pid, i) => '<div class="slot' + (S.sel && S.sel.k === 's' && S.sel.i === i ? ' sel' : '') + '"><button class="sl' + (pid ? '' : ' empty') + '" data-act="slot" data-i="' + i + '"' + (locked ? ' disabled' : '') + '><i>' + (i + 1) + '</i><span>' + (pid ? esc(pm[pid].name) : 'Empty') + '</span></button>' +
+    (pid && !locked ? '<button class="x" data-act="unslot" data-i="' + i + '" aria-label="Remove from XI">x</button>' : '') + '</div>').join('');
+  const filled = S.myXI.filter(Boolean).length;
+  let hint = 'Tap a squad player, then tap a slot.';
+  if (S.sel && S.sel.k === 'p') hint = 'Now tap a slot for ' + pm[S.sel.id].name + '.';
+  if (S.sel && S.sel.k === 's') hint = 'Tap another slot to swap, or a squad player to replace.';
+  if (locked) hint = 'Your XI is locked in.';
+  const st = S.room.status;
+  let lockBtn = '';
+  if (st === 'xi' && !isDQ(S.uid)){
+    lockBtn = locked ? (S.room.status === 'xi' ? '<button class="btn" data-act="unlock">Unlock to edit</button>' : '') :
+      '<button class="btn pri" data-act="lock"' + (filled === size ? '' : ' disabled') + '>Lock my XI</button>';
+  } else if (st === 'auction') lockBtn = '<small>You can lock your XI once the auction ends.</small>';
+  return (S.room.status === 'xi' ? xiClock() : '') + '<section class="card"><div class="two"><div class="col"><h3>Squad <small>' + squad.length + ' of ' + cfg().minSquad + ' to ' + cfg().maxSquad + '</small></h3>' + left + '</div>' +
+    '<div class="col"><h3>' + xiLabel() + ' <small>' + filled + '/' + size + '</small></h3>' + right + '</div></div>' +
+    '<small>' + esc(hint) + '</small>' +
+    (locked ? '' : '<div class="actions"><button class="btn" data-act="auto">Auto-fill</button><button class="btn" data-act="clearxi">Clear XI</button></div>') +
+    '<div class="actions">' + lockBtn + '</div></section>';
+}
+function vBoard(){
+  const st = S.state, sold = soldAll(), md = mode();
+  const teams = S.members.map(m => {
+    const sq = teamSold(m.uid), dq = isDQ(m.uid), open = S.open[m.uid];
+    return '<div class="trow"><button class="thead" data-act="bd" data-u="' + esc(m.uid) + '" aria-expanded="' + (open ? 'true' : 'false') + '">' + dotHtml(m.uid) + '<b>' + esc(m.team) + (m.uid === S.uid ? ' (you)' : '') + '</b>' +
+      (dq ? '<span class="badge bad">Out</span>' : '') + '<small>' + sq.length + ' players' + (md === 'points' ? ', ' + teamPoints(m.uid) + ' pts' : '') + '</small><em>' + purse(m.uid) + 'cr</em></button>' +
+      (open ? (sq.length ? '<ol class="tsq">' + sq.map(x => '<li><b>' + esc(pName(x.pid)) + '</b> ' + rc(pRole(x.pid)) + ' ' + x.price + 'cr' + (x.ret ? ' (retained)' : '') + '</li>').join('') + '</ol>' : '<small>No players yet.</small>') : '') + '</div>';
+  }).join('');
+  const live = S.room.status === 'auction';
+  const cur = st && st.phase === 'bidding' ? st.cur.pid : null;
+  const unsold = new Set(st ? st.unsold : []);
+  const seenIds = new Set([...sold.map(x => x.pid), ...unsold, ...(cur ? [cur] : [])]);
+  const list = S.room.players.filter(p => !p.ret && (!live || seenIds.has(p.id)));
+  const rows = list.slice().sort((a,b) => pName(a.id).localeCompare(pName(b.id))).map(p => {
+    const s = sold.find(x => x.pid === p.id); let stt;
+    if (s) stt = 'Sold to ' + esc(teamName(s.to)) + ' for ' + s.price + 'cr';
+    else if (p.id === cur) stt = 'On the block now';
+    else stt = live ? 'Unsold so far' : 'Unsold';
+    return '<div class="prow"><span>' + esc(pName(p.id)) + ' ' + rc(pRole(p.id)) + ' <small>' + p.base + 'cr</small></span><span>' + stt + '</span></div>';
+  }).join('');
+  const left = live && st ? st.queue.length : 0;
+  return '<section class="card"><h2>Teams</h2>' + (teams || '<p class="muted">No teams.</p>') + '</section>' +
+    '<section class="card pool"><h2>Players <small>' + sold.filter(x => !x.ret).length + ' sold</small></h2>' + rows +
+    (left ? '<small>' + left + ' more still to come. The order stays hidden.</small>' : '') + '</section>';
+}
+/* --- judging and results --- */
+function vJudging(){
+  const j = S.judging;
+  if (!j) return '<div class="card center"><h2>Judging</h2><p class="muted">Getting the judge ready.</p></div>';
+  const tuid = j.order[j.ti], t = j.teams.find(x => x.uid === tuid), pm = pMap();
+  const pid = t.xi[j.pi], p = pm[pid] || { name:'Player' }, marks = j.marks[tuid] || [];
+  const pts = marks.filter(x => x === 1).length, isJ = amJudge();
+  const price = (soldAll().find(x => x.pid === pid) || {}).price;
+  const dots = t.xi.map((_, i) => '<i class="' + (marks[i] === 1 ? 'y' : marks[i] === 0 ? 'n' : '') + (i === j.pi ? ' now' : '') + '"></i>').join('');
+  const jname = S.judgeDoc ? S.judgeDoc.team : 'The judge';
+  const jwho = cfg().judgeMode === 'host' ? 'the host' : jname;
+  const ctl = isJ ?
+    '<div class="two-btn"><button class="btn pri big" data-act="jgive">Give a point</button><button class="btn big" data-act="jskip">Skip</button></div><div class="actions"><button class="btn ghost" data-act="jundo"' + (j.ti === 0 && j.pi === 0 ? ' disabled' : '') + '>Undo last</button></div>' :
+    '<p class="muted">Waiting for ' + esc(jwho) + ' to decide.</p>' + (iAmHost() ? '<div class="actions"><button class="btn ghost" data-act="jtake">Judge it myself instead</button></div>' : '');
+  const board = j.order.map(u => { const mk = j.marks[u] || []; return '<div class="rank">' + dotHtml(u) + '<b>' + esc(teamName(u)) + '</b><em>' + mk.filter(x => x === 1).length + '</em></div>'; }).join('');
+  return '<section class="card jcard"><div class="jt">' + dotHtml(tuid) + ' ' + esc(teamName(tuid)) + ', ' + xiLabel() + '</div>' +
+    '<small>Player ' + (j.pi + 1) + ' of ' + t.xi.length + (price ? ', bought for ' + price + 'cr' : '') + '</small>' +
+    '<div class="jn">' + esc(p.name) + '</div><div class="dots">' + dots + '</div><p><b>' + pts + '</b> point' + (pts === 1 ? '' : 's') + ' so far</p></section>' +
+    '<section class="card">' + ctl + '</section><section class="card"><h3>Scores</h3>' + board + '</section>';
+}
+function vResults(){
+  const R = computeResults(), c = cfg(), md = mode(), r = S.room, judged = md === 'judge' && !!(S.judging && S.judging.done), scored = judged || md === 'points', size = xiSize(), pm = pMap();
+  let head;
+  if (scored && R.winners.length){
+    head = '<section class="card win"><p>The winner is</p><div class="t">' + R.winners.map(w => esc(w.team)).join(' and ') + '</div><p>' + R.winners[0].score + (md === 'points' ? ' squad points' : ' of ' + size + ' judge points') + '</p></section>';
+  } else if (md === 'nojudge' || (md === 'judge' && !S.judging)){
+    head = '<section class="card"><h2>Auction complete</h2><p class="muted">There was no judge, so no winner is crowned. Compare the final squads and Playing XIs below.</p></section>';
+  } else head = '<section class="card"><h2>No winner</h2><p class="muted">Every team was disqualified.</p></section>';
+  const ranked = scored ? R.ranked.map((x, i) => '<div class="rank"><span class="n">' + (i + 1) + '</span>' + dotHtml(x.uid) + '<b>' + esc(x.team) + (x.avg ? ' <small>(judge team, scored at the average)</small>' : '') + '</b><em>' + x.score + '</em></div>').join('') : '';
+  const dqs = R.rows.filter(x => x.dq).map(x => '<div class="rank"><span class="n">x</span>' + dotHtml(x.uid) + '<b>' + esc(x.team) + '</b><small>Disqualified, ' + x.n + ' of ' + c.minSquad + ' players</small></div>').join('');
+  const lists = R.rows.filter(x => !x.dq).map(x => {
+    const key = 'R:' + x.uid, open = !S.shut[key], ids = x.xi.length ? x.xi : finalXI(S.members.find(m => m.uid === x.uid) || { uid:x.uid, xi:[] });
+    return '<div class="trow"><button class="thead" data-act="bd" data-u="' + esc(key) + '" aria-expanded="' + (open ? 'true' : 'false') + '">' + dotHtml(x.uid) + '<b>' + esc(x.team) + '</b><small>' + x.purse + 'cr left</small>' + (x.score !== null ? '<em>' + x.score + '</em>' : '') + '</button>' +
+      (open ? '<ul class="xilist">' + ids.map((id, i) => '<li><span>' + esc((pm[id] || {}).name) + ' ' + rc((pm[id] || {}).role || 'AR') + '</span><span class="' + (md === 'judge' ? (x.marks[i] === 1 ? 'y' : 'n') : 'n') + '">' +
+        (md === 'judge' ? (x.marks[i] === 1 ? 'Point' : x.marks[i] === 0 ? 'No point' : '') : md === 'points' ? ((pm[id] || {}).pts || 0) + ' pts' : '') + '</span></li>').join('') + '</ul>' : '') + '</div>';
+  }).join('');
+  const champOn = !!champ(), fin = champOn && !champ().done;
+  return head + (ranked || dqs ? '<section class="card"><h2>Standings</h2>' + ranked + dqs + '</section>' : '') +
+    '<section class="card"><h2>Playing XIs</h2>' + (lists || '<p class="muted">No teams to show.</p>') + '</section>' + vChampBlock() +
+    '<section class="card"><div class="actions">' + (iAmHost() ? '<button class="btn danger" data-act="' + (S.closeAsk ? 'closeyes' : 'closeask') + '">' + (S.closeAsk ? 'Tap again to delete' : (fin ? 'End championship and delete room' : 'Close and delete room')) + '</button>' : '') + '<button class="btn" data-act="leaveGo">' + (fin ? 'Leave (come back later)' : 'Back to home') + '</button></div></section>';
+}
+/* ---------- render loop ---------- */
+let rq = 0;
+function rerender(full){
+  if (full) S.fullLobby = true;
+  if (rq) return;
+  rq = requestAnimationFrame(() => { rq = 0; render(); });
+}
+function render(){
+  let html, key;
+  if (!S.code){ key = 'home'; html = vHome(); }
+  else if (!S.room){ key = 'loading'; html = vLoading(); }
+  else if (S.room.status === 'lobby'){
+    if (iAmHost()){
+      key = 'lobby-host';
+      if (S.lastKey === 'lobby-host' && !S.fullLobby) return updateLobbyDyn();
+      html = vLobbyHost();
+    } else { key = 'lobby'; html = vLobby(); }
+  } else { key = 'shell'; html = vShell(); }
+  S.lastKey = key; S.fullLobby = false;
+  V.innerHTML = html + (S.sheet && S.room ? vSheet() : '');
+  if (S.focusSel){ const f = V.querySelector(S.focusSel); if (f) f.focus(); S.focusSel = null; }
+  tickUI();
+}
+function tickUI(){
+  const xs = V.querySelectorAll('.xcd');
+  if (xs.length && S.state && S.state.xiEnd){
+    const s = S.state; let r = s.xiPaused ? s.xiRem : (iAmHost() ? s.xiEnd - Date.now() : s.xiRem - (performance.now() - S.rx));
+    r = Math.max(0, Math.ceil(r / 1000)); const t = Math.floor(r / 60) + ':' + String(r % 60).padStart(2, '0'); xs.forEach(e => { e.textContent = t; });
+  }
+  const cd = V.querySelector('#cd'); if (!cd || !S.state || !S.room || !S.room.cfg) return;
+  const st = S.state, bar = V.querySelector('#bar');
+  if (st.phase !== 'bidding'){ cd.textContent = '-'; if (bar) bar.style.width = '0%'; return; }
+  let rem = st.paused ? st.rem : (iAmHost() ? st.endsAt - Date.now() : st.rem - (performance.now() - S.rx));
+  rem = Math.max(0, rem);
+  const total = (st.cur.extra ? cfg().extraSec : cfg().baseSec) * 1000;
+  cd.textContent = Math.ceil(rem / 1000);
+  if (bar) bar.style.width = Math.min(100, rem / total * 100) + '%';
+}
+const loop = setInterval(() => { try{ hostTick(); if (S.room && S.room.last) countStats(); }catch(e){ console.error(e); } tickUI(); }, 150);
+
+/* ---------- room lifecycle ---------- */
+function stopBids(){ if (S.bidUn){ try{ S.bidUn(); }catch(e){} S.un = S.un.filter(f => f !== S.bidUn); S.bidUn = null; } }
+function roomLabel(){ const ch = champ(); return ch ? 'Championship, game ' + gameNo() + ' of ' + ch.total : 'Auction'; }
+function subBids(){
+  if (S.bidUn || !S.db || !S.code) return;
+  S.bidUn = S.db.collection('rooms/' + S.code + '/bids').onSnapshot(snap => {
+    for (const ch of snap.docChanges()){ if (ch.type === 'removed') continue; const d = ch.doc.data(); if (d) hostOnBid(ch.doc.id, d); }
+  }, onErr);
+  S.un.push(S.bidUn);
+}
+function enterRoom(code){
+  leaveRoom(true);
+  S.code = code; ls.set(LS, code); S.recLabel = null;
+  const R = 'rooms/' + code;
+  S.un.push(S.db.doc(R).onSnapshot(s => {
+    if (!s.exists){ toast(S.gotRoom ? 'This room was closed.' : 'Room not found.'); return leaveRoom(); }
+    const d = s.data(); S.gotRoom = true;
+    if (S.room && (d.v || 0) <= (S.room.v || 0)) return;
+    const prev = S.room ? S.room.status : null, pg = S.room ? gameNo() : null, pa = S.room ? (S.room.auctioneer || S.room.hostId) : null;
+    S.room = d;
+    if (pa !== null && pa !== (d.auctioneer || d.hostId)) S.hbAt = performance.now();
+    if (pg !== null && gameNo() !== pg) onNewGame();
+    if (isAuctioneer()) subBids(); else stopBids();
+    const lb = roomLabel(); if (S.recLabel !== lb){ S.recLabel = lb; touchRecent(code, lb); }
+    if (prev && prev !== d.status){
+      if (d.status === 'xi' && me() && !isDQ(S.uid)) S.tab = 'squad';
+      else S.tab = 'main';
+      S.sel = null;
+    }
+    rerender(prev !== d.status);
+  }, onErr));
+  S.un.push(S.db.collection(R + '/members').onSnapshot(snap => {
+    const all = snap.docs.map(d => d.data());
+    S.members = all.filter(m => m.role !== 'judge').sort((a,b) => (a.joinedAt - b.joinedAt) || (a.uid < b.uid ? -1 : 1));
+    S.judgeDoc = all.find(m => m.role === 'judge') || null;
+    const mm = me(), jself = !!(S.judgeDoc && S.judgeDoc.uid === S.uid); if (jself) S.wasMember = true;
+    if (mm){
+      S.wasMember = true;
+      if (!S.xiInit){ S.myXI = Array.isArray(mm.xi) ? mm.xi.slice() : []; S.myLocked = !!mm.locked; S.xiInit = true; }
+    } else if (!jself && S.wasMember && S.room && S.room.status === 'lobby'){ toast('The host removed you from this room.'); return leaveRoom(); }
+    rerender();
+  }, onErr));
+  S.un.push(S.db.doc(R + '/live/state').onSnapshot(s => {
+    const d = s.exists ? s.data() : null; if (!d) return;
+    if (S.state && (d.v || 0) <= S.state.v) return;
+    fx(S.state, d); S.state = d; S.rx = performance.now(); rerender();
+  }, onErr));
+  S.un.push(S.db.doc(R + '/live/judging').onSnapshot(s => {
+    const d = s.exists ? s.data() : null; if (!d) return;
+    if (S.judging && (d.v || 0) <= S.judging.v) return;
+    S.judging = d; rerender();
+  }, onErr));
+  S.un.push(S.db.doc(R + '/live/hb').onSnapshot(s => {
+    const d = s.exists ? s.data() : null; if (!d) return;
+    if (!S.hb || d.n !== S.hb.n || d.uid !== S.hb.uid){ S.hb = d; S.hbAt = performance.now(); }
+  }, () => {}));
+  S.un.push(S.db.collection(R + '/chat').orderBy('at', 'desc').limit(CHAT_FETCH).onSnapshot(onChatSnap, () => {}));
+  touchRecent(code, null);
+  rerender(true);
+}
+function leaveRoom(silent){
+  for (const u of S.un){ try{ u(); }catch(e){} }
+  S.un = []; S.bidUn = null;
+  S.code = null; S.room = null; S.members = []; S.state = null; S.judging = null; S.judgeDoc = null; S.sheet = false; S.peek = null;
+  S.myXI = null; S.myLocked = false; S.xiInit = false; S.wasMember = false; S.gotRoom = false;
+  S.sel = null; S.tab = 'main'; S.lastKey = null; S.pendingBid = null; S.endAsk = false; S.closeAsk = false;
+  S.chat = []; S.chatOpen = false; S.chatUnread = 0; S.chatSeen = 0; S.chatInit = false; S.hb = null; S.hbAt = 0; S.runnerSync = false; S.handOpen = false; S.colorOpen = false; S.beatAt = 0; CH.innerHTML = '';
+  for (const k in seen) delete seen[k];
+  if (!silent){ ls.del(LS); rerender(true); }
+}
+async function createRoom(){
+  if (!S.db) return toast("Live play isn't available in this view.");
+  let code = null;
+  try{
+    for (let i = 0; i < 6; i++){ const c = genCode(); const s = await S.db.doc('rooms/' + c).get(); if (!s.exists){ code = c; break; } }
+    if (!code) return toast('Could not make a free room code. Try again.');
+    await S.db.doc('rooms/' + code).set({ code, hostId:S.uid, status:'lobby', v:1, createdAt:Date.now(), budget:100,
+      cfg:{ maxTeams:4, minSquad:11, maxSquad:13, baseSec:10, extraSec:3, judgeMode:'host', judgeId:S.uid, xiSec:60, mode:'judge', mystery:true }, players:[], game:1, champ:null, auctioneer:S.uid });
+  }catch(e){ return onErr(e); }
+  enterRoom(code);
+}
+async function joinRoom(){
+  if (!S.db) return;
+  const code = (S.form.code || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, ''), jr = S.form.jrole || 'team', team = (myName() || '').trim().slice(0, 20);
+  if (!code) return toast('Type the room code first.');
+  try{
+    const rs = await S.db.doc('rooms/' + code).get();
+    if (!rs.exists) return toast('No room with that code.');
+    const room = rs.data(), isHost = room.hostId === S.uid;
+    if (jr === 'watch') return enterRoom(code);
+    const ms = await S.db.doc('rooms/' + code + '/members/' + S.uid).get();
+    if (!ms.exists && !isHost){
+      if (room.status === 'lobby'){
+        const asJ = jr === 'judge'; if (!team) return toast(asJ ? 'Type your name first.' : 'Pick a team name first.');
+        const all = await S.db.collection('rooms/' + code + '/members').get();
+        const ds = all.docs.map(d => d.data());
+        if (asJ){ if (room.cfg.judgeMode !== 'friend') return toast('This room has no seat for a judge.'); if (ds.some(x => x.role === 'judge')) return toast('The judge seat is taken.'); }
+        else if (ds.filter(x => x.role !== 'judge').length >= room.cfg.maxTeams) return toast('This room is full.');
+        const inv = S.form.inv && S.profile && S.form.inv !== S.profile.pid ? S.form.inv : null;
+        await S.db.doc('rooms/' + code + '/members/' + S.uid).set({ uid:S.uid, team, role:asJ ? 'judge' : 'team', joinedAt:Date.now(), xi:[], locked:false, pid:S.profile ? S.profile.pid : null, invBy:inv, color:null, retain:null });
+      } else toast('That auction already started. You can watch.');
+    }
+  }catch(e){ return onErr(e); }
+  enterRoom(code);
+}
+async function resume(code){
+  code = code || ls.get(LS); if (!code || !S.db) return rerender(true);
+  try{
+    const s = await S.db.doc('rooms/' + code).get();
+    if (!s.exists){ dropRecent(code); if (ls.get(LS) === code) ls.del(LS); toast('That room is gone.'); return rerender(true); }
+    enterRoom(code);
+  }catch(e){ onErr(e); rerender(true); }
+}
+async function closeRoom(){
+  const db = S.db, R = 'rooms/' + S.code;
+  try{
+    await db.doc(R).delete();
+    const ms = await db.collection(R + '/members').get(); await Promise.all(ms.docs.map(d => db.doc(R + '/members/' + d.id).delete()));
+    const bs = await db.collection(R + '/bids').get(); await Promise.all(bs.docs.map(d => db.doc(R + '/bids/' + d.id).delete()));
+    await db.doc(R + '/live/state').delete(); await db.doc(R + '/live/judging').delete(); await db.doc(R + '/live/hb').delete();
+    const cs = await db.collection(R + '/chat').get(); await Promise.all(cs.docs.map(d => db.doc(R + '/chat/' + d.id).delete()));
+    dropRecent(S.code);
+  }catch(e){ onErr(e); }
+}
+
+/* ---------- actions ---------- */
+root.addEventListener('click', e => {
+  if (S.sound) audio();
+  const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
+  act(el.dataset.act, el);
+});
+CH.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target && e.target.id === 'ci'){ e.preventDefault(); sendChat(); } });
+root.addEventListener('input', e => { const n = e.target && e.target.name; if (n) S.form[n] = e.target.value; });
+const LIM = { maxTeams:[1,8], minSquad:[1,15], maxSquad:[1,25], baseSec:[5,15], extraSec:[2,5], xiSec:[30,120] };
+function act(a, el){
+  const d = (el && el.dataset) || {}, host = iAmHost();
+  switch (a){
+    case 'invite': { const url = opts.inviteUrl(S.room.code, S.profile && S.profile.pid), msg = 'Join my cricket auction. Room code ' + S.room.code;
+      if (navigator.share) navigator.share({ title:'Cricket Auction', text:msg, url }).catch(() => {});
+      else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => toast('Invite link copied'), () => toast(url));
+      else toast(url); return; }
+    case 'resetfb': return opts.onReset && opts.onReset();
+    case 'create': return createRoom();
+    case 'join': return joinRoom();
+    case 'resume': return resume(d.c);
+    case 'leave': if (S.room){ S.sheet = true; return rerender(true); } return leaveRoom();
+    case 'sheetx': S.sheet = false; return rerender(true);
+    case 'leaveEnd': S.sheet = false; return host ? closeRoom() : undefined;
+    case 'leaveGo': {
+      S.sheet = false; const st = S.room && S.room.status;
+      if (S.room && !host && st === 'lobby') memberRef(S.uid).delete().catch(onErr);
+      if (isAuctioneer() && S.state){
+        if (st === 'auction' && S.state.phase === 'bidding' && !S.state.paused) hostPause();
+        if (st === 'xi' && !S.state.xiPaused){ const n = clone(S.state); n.xiRem = Math.max(0, n.xiEnd - Date.now()); n.xiPaused = true; commitState(n); }
+      }
+      return leaveRoom();
+    }
+    case 'theme': S.theme = S.theme === 'night' ? 'sky' : 'night'; ls.set('ca:theme', S.theme); document.documentElement.setAttribute('data-theme', S.theme); return rerender(true);
+    case 'sound': S.sound = !S.sound; ls.set('ca:sound', S.sound ? '1' : '0'); if (S.sound) audio(); return rerender(true);
+    case 'jrole': S.form.jrole = d.r; return rerender(true);
+    case 'peek': S.peek = S.peek === d.u ? null : d.u; return rerender();
+    case 'copy': if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(S.room.code).then(() => toast('Code copied'), () => toast('Code: ' + S.room.code)); else toast('Code: ' + S.room.code); return;
+    case 'tab': S.tab = d.t; S.sel = null; return rerender();
+    case 'bd': if (String(d.u).slice(0, 2) === 'R:') S.shut[d.u] = !S.shut[d.u]; else S.open[d.u] = !S.open[d.u]; return rerender();
+    case 'bid': return placeBid(+d.t);
+    case 'sq': return xiTapPlayer(d.pid);
+    case 'slot': return xiTapSlot(+d.i);
+    case 'unslot': ensureXI(); S.myXI[+d.i] = null; S.sel = null; saveMine(); return rerender();
+    case 'auto': return xiAuto();
+    case 'clearxi': if (!S.myLocked){ S.myXI = Array(xiSize()).fill(null); S.sel = null; saveMine(); rerender(); } return;
+    case 'lock': ensureXI(); if (S.myXI.filter(Boolean).length !== xiSize()) return toast('Fill every slot first.'); S.myLocked = true; S.sel = null; saveMine(true); return rerender();
+    case 'unlock': if (S.room.status === 'xi'){ S.myLocked = false; saveMine(true); rerender(); } return;
+    case 'copypid': if (S.profile){ if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(S.profile.pid).then(() => toast('Player ID copied'), () => toast(S.profile.pid)); else toast(S.profile.pid); } return;
+    case 'savename': { const nm = (S.form.profname || '').trim().slice(0, 20); if (!S.profile || S.profile.owner !== S.uid) return toast('Restore your profile first.'); if (!nm) return toast('Type a display name.'); const n = clone(S.profile); n.name = nm; saveProfile(n); S.form.profname = null; toast('Name saved'); return rerender(true); }
+    case 'togrec': S.form.recOpen = !S.form.recOpen; return rerender(true);
+    case 'restore': return recoverProfile(S.form.rpid, S.form.rrec);
+    case 'coltog': S.colorOpen = !S.colorOpen; return rerender();
+    case 'color': { const m = me(); if (!m) return; m.color = d.c; _cmFor = null; memberRef(S.uid).update({ color:d.c }).catch(onErr); return rerender(true); }
+    case 'retain': { const m = me(); if (!m) return; const v = m.retain === d.pid ? null : d.pid; m.retain = v; memberRef(S.uid).update({ retain:v }).catch(onErr); return rerender(true); }
+    case 'chat': S.chatOpen = true; S.chatSeen = S.chat.length ? S.chat[S.chat.length - 1].at : 0; S.chatUnread = 0; renderChat(); { const i = CH.querySelector('#ci'); if (i) i.focus(); } return rerender();
+    case 'chatx': S.chatOpen = false; CH.innerHTML = ''; return rerender();
+    case 'chatsend': return sendChat();
+    case 'jgive': if (amJudge() || host) judgeStep(true); return;
+    case 'jskip': if (amJudge() || host) judgeStep(false); return;
+    case 'jundo': if (amJudge() || host) judgeUndo(); return;
+  }
+  if (isAuctioneer()) switch (a){
+    case 'pause': return hostPause();
+    case 'hammer': if (S.state.phase === 'bidding' && S.state.cur.leader) resolve(false); return;
+    case 'skip': if (S.state.phase === 'bidding') resolve(true); return;
+    case 'endask': S.endAsk = true; rerender(); setTimeout(() => { S.endAsk = false; rerender(); }, 4000); return;
+    case 'endyes': S.endAsk = false; return hostEnd();
+    case 'startj': return startJudging();
+    case 'finish': return finishNoJudge();
+    case 'handask': S.handOpen = !S.handOpen; return rerender();
+    case 'handto': { const r = clone(S.room); r.auctioneer = d.u; r.handoverAt = Date.now(); S.handOpen = false; S.hbAt = performance.now(); commitRoom(r); return toast('Clock handed over.'); }
+  }
+  if (!host) return;
+  switch (a){
+    case 'takeback': { const r = clone(S.room); r.auctioneer = S.uid; r.handoverAt = Date.now(); S.runnerSync = false; return commitRoom(r); }
+    case 'mode': {
+      const r = clone(S.room), c = r.cfg; if (d.m === 'nojudge' && r.champ) return toast('A championship needs a winner each game.');
+      c.mode = d.m;
+      if (d.m === 'judge'){ if (c.judgeMode === 'none') c.judgeMode = 'friend'; if (c.judgeMode === 'friend' && !S.judgeDoc) c.judgeId = null; }
+      else { c.judgeMode = 'none'; c.judgeId = null; }
+      return commitRoom(r);
+    }
+    case 'mystery': { const r = clone(S.room); r.cfg.mystery = r.cfg.mystery === false; return commitRoom(r); }
+    case 'champ': {
+      if (gameNo() !== 1) return; const r = clone(S.room);
+      if (r.champ) r.champ = null; else { r.champ = newChamp(3); if (r.cfg.mode === 'nojudge'){ r.cfg.mode = 'points'; r.cfg.judgeMode = 'none'; r.cfg.judgeId = null; } }
+      return commitRoom(r);
+    }
+    case 'cgames': { if (!champ() || gameNo() !== 1) return; const r = clone(S.room); r.champ.total = Math.min(7, Math.max(2, r.champ.total + (+d.d))); return commitRoom(r); }
+    case 'newgame': {
+      const r = clone(S.room), ch = r.champ; if (!ch || !r.last || ch.done) return;
+      r.game = gameNo() + 1; ch.game = r.game; r.status = 'lobby'; r.last = null; r.players = []; r.auctioneer = r.hostId; S.recLabel = null;
+      return commitRoom(r);
+    }
+    case 'reuselist': { const r = clone(S.room); r.players = (r.prevPlayers || []).map(p => ({ id:uid8(), name:p.name, base:p.base, role:p.role || 'AR', pts:p.pts || 5 })); return commitRoom(r); }
+    case 'cycrole': { const r = clone(S.room), p = r.players.find(x => x.id === d.id); if (!p) return; p.role = ROLE_ORDER[(ROLE_ORDER.indexOf(p.role || 'AR') + 1) % 3]; return commitRoom(r); }
+    case 'pts': { const r = clone(S.room), p = r.players.find(x => x.id === d.id); if (!p) return; p.pts = Math.min(10, Math.max(1, (p.pts || 5) + (+d.d))); return commitRoom(r); }
+    case 'prole': S.form.prole = d.r; return rerender(true);
+    case 'hrole': {
+      const r = clone(S.room), c = r.cfg;
+      if (d.r === 'judge'){ c.judgeMode = 'host'; S.form.wantPlay = false; if (me()) memberRef(S.uid).delete().catch(onErr); }
+      else { if (c.judgeMode === 'host') c.judgeMode = 'friend'; S.form.wantPlay = d.r === 'play'; if (d.r !== 'play' && me()) memberRef(S.uid).delete().catch(onErr); }
+      return commitRoom(r);
+    }
+    case 'cfg': {
+      const k = d.k, r = clone(S.room), c = r.cfg, l = LIM[k]; if (!l) return;
+      c[k] = Math.min(l[1], Math.max(l[0], (c[k] || 60) + (+d.d) * (k === 'xiSec' ? 15 : 1)));
+      if (k === 'minSquad' && c.maxSquad < c.minSquad) c.maxSquad = c.minSquad;
+      if (k === 'maxSquad' && c.minSquad > c.maxSquad) c.minSquad = c.maxSquad;
+      return commitRoom(r);
+    }
+    case 'jmode': {
+      const r = clone(S.room), c = r.cfg; c.judgeMode = d.m;
+      if (d.m === 'host') c.judgeId = S.uid; else if (d.m === 'none') c.judgeId = null; else if (!S.members.some(m => m.uid === c.judgeId)) c.judgeId = null;
+      return commitRoom(r);
+    }
+    case 'jpick': { const r = clone(S.room); r.cfg.judgeId = d.u; return commitRoom(r); }
+    case 'jtake': { const r = clone(S.room); r.cfg.judgeMode = 'host'; r.cfg.judgeId = S.uid; return commitRoom(r); }
+    case 'kick': return void S.db.doc('rooms/' + S.code + '/members/' + d.u).delete().then(() => rerender(true)).catch(onErr);
+    case 'hostplay': {
+      const team = (S.form.hostteam || '').trim().slice(0, 20); if (!team) return toast('Type a team name first.');
+      if (S.members.length >= cfg().maxTeams) return toast('Raise the team limit first.');
+      return void memberRef(S.uid).set({ uid:S.uid, team, joinedAt:Date.now(), xi:[], locked:false, pid:S.profile ? S.profile.pid : null, invBy:null, color:null, retain:null }).then(() => rerender(true)).catch(onErr);
+    }
+    case 'addp': {
+      const name = (S.form.pname || '').trim(); if (!name) return toast('Type a player name.');
+      const base = Math.max(1, Math.min(100, parseInt(S.form.pbase, 10) || 1));
+      const r = clone(S.room); if (r.players.length >= 100) return toast('Limit is 100 players.');
+      r.players.push({ id:uid8(), name:name.slice(0, 28), base, role:S.form.prole || 'AR', pts:Math.max(1, Math.min(10, parseInt(S.form.ppts, 10) || 5)) });
+      S.form.pname = ''; S.form.pbase = ''; S.form.ppts = ''; S.focusSel = '#np-name'; return commitRoom(r);
+    }
+    case 'togglebulk': S.form.bulkOpen = !S.form.bulkOpen; return rerender(true);
+    case 'bulk': {
+      const { out, bad } = parseList(S.form.bulk || ''); if (!out.length) return toast('No valid lines. Try "Kohli 5cr".');
+      const r = clone(S.room); r.players = r.players.concat(out).slice(0, 100);
+      S.form.bulk = bad.join('\n'); if (!bad.length) S.form.bulkOpen = false;
+      toast(out.length + ' added' + (bad.length ? ', ' + bad.length + ' line(s) skipped' : ''));
+      return commitRoom(r);
+    }
+    case 'sample': { const r = clone(S.room); r.players = r.players.concat(parseList(SAMPLE).out).slice(0, 100); return commitRoom(r); }
+    case 'delp': { const r = clone(S.room); r.players = r.players.filter(p => p.id !== d.id); return commitRoom(r); }
+    case 'clearp': { const r = clone(S.room); r.players = []; return commitRoom(r); }
+    case 'start': return hostStart();
+    case 'closeask': S.closeAsk = true; rerender(); setTimeout(() => { S.closeAsk = false; rerender(); }, 4000); return;
+    case 'closeyes': return closeRoom();
+  }
+}
+
+async function init(){
+  render();
+  try{ if (claudeApi && claudeApi.use){ S.db = await claudeApi.use('db'); S.user = await claudeApi.use('user'); } }catch(e){ console.error(e); }
+  S.connecting = false;
+  if (S.user){
+    try{ S.uid = await S.user.id(); }catch(e){}
+    try{ S.canWrite = await S.user.can('data.write'); }catch(e){}
+  }
+  if (!S.uid){ let a = ls.get(LS + ':anon'); if (!a){ a = 'anon_' + uid8(); ls.set(LS + ':anon', a); } S.uid = a; }
+  await loadProfile();
+  if (S.db && ls.get(LS)) await resume(); else rerender(true);
+}
+init();
+return { S, act, parseList, destroy(){ clearInterval(loop); leaveRoom(true); } };
+}
+window.CricketAuction = { createApp };
+})();
+
+/* ---------- Firebase boot: setup screen, anonymous sign-in, then start the game ---------- */
+(function(){
+'use strict';
+if (window.__NO_AUTOSTART) return;
+const KEY = 'cricket-auction:fbcfg';
+const root = document.getElementById('app');
+const lsGet = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+const lsSet = (k, v) => { try{ localStorage.setItem(k, v); }catch(e){} };
+const lsDel = k => { try{ localStorage.removeItem(k); }catch(e){} };
+document.documentElement.setAttribute('data-theme', lsGet('ca:theme') || 'sky');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const KEYS = ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'];
+function parseCfg(text){
+  const cfg = {}, re = /["']?(apiKey|authDomain|projectId|storageBucket|messagingSenderId|appId|measurementId)["']?\s*:\s*["']([^"']+)["']/g;
+  let m; while ((m = re.exec(String(text)))) cfg[m[1]] = m[2];
+  return cfg;
+}
+const validCfg = c => !!(c && c.apiKey && c.projectId && c.appId);
+const slim = c => { const o = {}; KEYS.forEach(k => { if (c[k]) o[k] = c[k]; }); return o; };
+function readHash(){
+  const out = {}, h = location.hash.replace(/^#/, ''); if (!h) return out;
+  const p = new URLSearchParams(h);
+  if (p.get('fb')){ try{ out.cfg = JSON.parse(atob(p.get('fb'))); }catch(e){} }
+  if (p.get('room')) out.room = p.get('room').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  if (p.get('inv')) out.inv = p.get('inv').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 9);
+  return out;
+}
+function page(inner){ root.innerHTML = '<div class="wrap home">' + inner + '</div>'; }
+function brand(title, text){ return '<div class="brand"><div class="stump"><i></i><i></i><i></i></div><h1>' + title + '</h1>' + (text ? '<p>' + text + '</p>' : '') + '</div>'; }
+
+function showSetup(msg){
+  page(brand('One-time<br>setup', 'Paste the Firebase web config for your project. You do this once. Then you can send friends an invite link that carries it for them.') +
+    '<section class="card"><label for="cfg">Firebase web config</label><textarea id="cfg" placeholder="const firebaseConfig = {&#10;  apiKey: &quot;...&quot;,&#10;  projectId: &quot;...&quot;,&#10;  appId: &quot;...&quot;&#10;};"></textarea>' +
+    (msg ? '<div class="note warn">' + esc(msg) + '</div>' : '') +
+    '<div style="height:12px"></div><button class="btn pri" id="cfgsave">Save and start</button></section>');
+  root.querySelector('#cfgsave').addEventListener('click', () => {
+    const cfg = parseCfg(root.querySelector('#cfg').value);
+    if (!validCfg(cfg)) return showSetup('That config is missing apiKey, projectId or appId. Copy the whole block from Project settings, Your apps.');
+    lsSet(KEY, JSON.stringify(slim(cfg))); start(slim(cfg), null, null);
+  });
+}
+function fail(msg){
+  page(brand('Cannot<br>connect', '') + '<section class="card"><div class="note warn">' + esc(msg) + '</div>' +
+    '<button class="btn pri" id="retry">Try again</button><div style="height:8px"></div><button class="btn" id="reset">Change Firebase project</button></section>');
+  root.querySelector('#retry').addEventListener('click', () => location.reload());
+  root.querySelector('#reset').addEventListener('click', () => { lsDel(KEY); location.reload(); });
+}
+function explain(e){
+  const c = (e && e.code) || '';
+  if (c === 'auth/operation-not-allowed' || c === 'auth/admin-restricted-operation') return 'Anonymous sign-in is switched off. In Firebase open Authentication, Sign-in method, turn on Anonymous, then try again.';
+  if (c === 'auth/configuration-not-found') return 'Authentication is not set up yet. In Firebase open Authentication and tap Get started, then turn on Anonymous.';
+  if (c === 'auth/invalid-api-key' || c === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') return 'That API key is not valid. Check the config you pasted.';
+  if (c === 'auth/unauthorized-domain') return "This website is not allowed yet. In Firebase open Authentication, Settings, Authorized domains, and add this site's domain.";
+  if (c === 'auth/network-request-failed' || c === 'unavailable') return 'No connection to Firebase. Check your internet and try again.';
+  if (c === 'permission-denied') return 'Firestore is blocking access. Paste the security rules from the setup guide and tap Publish.';
+  if (c === 'not-found' || c === 'failed-precondition') return 'The Firestore database does not exist yet. In Firebase open Firestore Database and tap Create database.';
+  return 'Something went wrong: ' + (c || (e && e.message) || 'unknown error');
+}
+async function start(cfg, room, inv){
+  page(brand('Connecting', 'Signing in to your game server.'));
+  if (!window.firebase) return fail('Could not load Firebase from the internet. Check your connection and reload.');
+  let db, uid;
+  try{
+    if (!firebase.apps.length) firebase.initializeApp(cfg);
+    const auth = firebase.auth();
+    const existing = await new Promise(res => { const un = auth.onAuthStateChanged(u => { un(); res(u); }); });
+    uid = existing ? existing.uid : (await auth.signInAnonymously()).user.uid;
+    db = firebase.firestore();
+    try{ db.settings({ experimentalAutoDetectLongPolling:true, merge:true }); }catch(e){}
+    await db.doc('rooms/_probe').get();
+  }catch(e){ console.error(e); return fail(explain(e)); }
+  const shim = { use: async n => n === 'db' ? db : n === 'user' ? { id: async () => uid, can: async () => true, isOwner: async () => false, canEdit: async () => false } : null };
+  root.innerHTML = '';
+  window.CricketAuction.createApp(root, shim, {
+    lsKey: 'cricket-auction:' + cfg.projectId, prefillCode: room, prefillInv: inv,
+    onReset(){ lsDel(KEY); location.reload(); },
+    inviteUrl(code, pid){ return location.href.split('#')[0] + '#fb=' + encodeURIComponent(btoa(JSON.stringify(slim(cfg)))) + '&room=' + code + (pid ? '&inv=' + pid : ''); }
+  });
+}
+const hash = readHash();
+let cfg = null;
+if (hash.cfg && validCfg(hash.cfg)){ cfg = slim(hash.cfg); lsSet(KEY, JSON.stringify(cfg)); }
+else { try{ const s = lsGet(KEY); if (s) cfg = JSON.parse(s); }catch(e){} }
+if (hash.cfg || hash.room || hash.inv){ try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){} }
+if (!validCfg(cfg)) showSetup(); else start(cfg, hash.room || null, hash.inv || null);
+})();
+</script>
+</body>
+</html>
